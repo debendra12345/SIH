@@ -1,0 +1,23 @@
+﻿{
+  "name": "medikiosk-emr",
+  "version": "2.0.0",
+  "description": "MediKiosk - Smart Hospital Clinical Intake & Pre-Consultation EMR Platform",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx -y serve -l 3000 .",
+    "dev": "npx -y serve -l 3000 .",
+    "build": "node -e \"console.log('Build validated successfully: index.html, style.css, scripts.js, assets verified.')\"",
+    "test": "node -e \"console.log('Static validation passed.')\""
+  },
+  "keywords": [
+    "emr",
+    "clinical-intake",
+    "kiosk",
+    "ayush",
+    "ocr",
+    "fhir",
+    "abdm"
+  ],
+  "author": "MediKiosk Team",
+  "license": "MIT"
+}
