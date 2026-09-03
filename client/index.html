@@ -218,8 +218,20 @@ img { max-width: 100%; }
 .method-btn:hover:not(.active) { border-color: var(--border-dark); background: #F8FAFC; }
 .security-note { margin-top: 18px; padding: 13px; border-radius: 10px; background: var(--teal-light); color: #35635E; font-size: 11px; line-height: 1.6; }
 .otp-input { text-align: center; letter-spacing: 10px; font-size: 24px; font-weight: 700; }
-.demo-otp { margin-top: 12px; text-align: center; }
-.demo-badge { display: inline-flex; padding: 4px 9px; border-radius: 7px; background: var(--amber-light); color: var(--amber); font-size: 10px; font-weight: 700; }
+.otp-channel-card {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 15px; border: 1.5px solid var(--border);
+  border-radius: 10px; background: white; cursor: pointer;
+  margin-bottom: 10px; transition: var(--transition);
+}
+.otp-channel-card:hover { border-color: var(--border-dark); background: #FAFCFE; }
+.otp-channel-card.active { border-color: var(--teal); background: var(--teal-light); }
+.otp-channel-icon { font-size: 20px; }
+.otp-channel-info { flex: 1; text-align: left; }
+.otp-channel-title { font-size: 12px; font-weight: 700; color: var(--navy); }
+.otp-channel-dest { font-size: 11px; font-family: monospace; color: var(--teal); margin-top: 2px; }
+.otp-channel-check { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: transparent; }
+.otp-channel-card.active .otp-channel-check { border-color: var(--teal); background: var(--teal); color: white; }
 
 /* ============================================================
    PATIENT PORTAL
@@ -1161,18 +1173,42 @@ img { max-width: 100%; }
       <!-- DOCTOR -->
       <div class="auth-panel active" id="doctorAuthPanel" role="tabpanel">
         <h3 style="font-size:17px;">Doctor sign in</h3>
-        <p class="login-subtitle">Access your OPD queue and physician review workspace.</p>
         <div id="doctorLoginStep">
-          <div class="input-group"><label for="doctorId">Doctor ID</label><input type="text" id="doctorId" placeholder="e.g. DOC-1042" autocomplete="username"></div>
+          <div class="input-group"><label for="doctorId">Doctor ID</label><input type="text" id="doctorId" placeholder="e.g. DOC-1001" autocomplete="username"></div>
           <div class="input-group"><label for="password">Password</label><input type="password" id="password" placeholder="Enter password" autocomplete="current-password"></div>
-          <button class="primary-btn" onclick="sendOTP()">Continue with Secure Login</button>
-          <div class="security-note">🔒 Demo authentication only. Production should use hospital SSO and approved MFA.</div>
+          <button class="primary-btn" id="doctorLoginSubmitBtn" onclick="sendOTP()">Continue with Secure Login</button>
+          <div class="security-note">🔒 Two-factor authentication enabled. A 6-digit verification code will be dispatched to your registered contact.</div>
+        </div>
+        <div id="doctorMethodStep" style="display:none">
+          <p class="login-subtitle" style="margin-bottom:12px; font-weight:600; color:var(--navy);">Choose verification channel:</p>
+          <div class="otp-channel-card active" id="methodEmailCard" onclick="selectOtpMethod('email')">
+            <span class="otp-channel-icon">📧</span>
+            <div class="otp-channel-info">
+              <div class="otp-channel-title">Registered Email</div>
+              <div class="otp-channel-dest" id="maskedEmailDisplay">Loading...</div>
+            </div>
+            <div class="otp-channel-check">✓</div>
+          </div>
+          <div class="otp-channel-card" id="methodSmsCard" onclick="selectOtpMethod('sms')">
+            <span class="otp-channel-icon">📱</span>
+            <div class="otp-channel-info">
+              <div class="otp-channel-title">Mobile Number (SMS)</div>
+              <div class="otp-channel-dest" id="maskedSmsDisplay">Loading...</div>
+            </div>
+            <div class="otp-channel-check">✓</div>
+          </div>
+          <button class="primary-btn" id="sendOtpBtn" onclick="requestOtpDispatch()">Send Verification Code</button>
+          <button class="secondary-btn" onclick="backToDoctorLogin()">← Back to credentials</button>
         </div>
         <div id="doctorOtpStep" style="display:none">
+          <p class="login-subtitle" id="otpSentNotice" style="margin-bottom:12px; font-size:12px;">Enter the 6-digit code sent to your registered contact.</p>
           <div class="input-group"><label for="otp">Authentication Code</label><input type="text" id="otp" maxlength="6" class="otp-input" inputmode="numeric" placeholder="••••••" aria-label="6-digit OTP"></div>
-          <button class="primary-btn" onclick="verifyOTP()">Verify &amp; Open Dashboard</button>
-          <p class="demo-otp"><span class="demo-badge">Demo OTP · 123456</span></p>
-          <button class="secondary-btn" onclick="backToDoctorLogin()">← Back to sign in</button>
+          <button class="primary-btn" id="verifyOtpBtn" onclick="verifyOTP()">Verify &amp; Open Dashboard</button>
+          <div id="otpActionButtonsGrid" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;">
+            <button type="button" class="secondary-btn" id="resendOtpBtn" style="margin-top:0;" onclick="resendOTP()">Resend code</button>
+            <button type="button" class="secondary-btn" id="changeMethodBtn" style="margin-top:0;" onclick="switchToMethodSelection()">Use another method</button>
+          </div>
+          <button class="secondary-btn" style="margin-top:8px;" onclick="backToDoctorLogin()">← Back to sign in</button>
         </div>
       </div>
       <!-- PATIENT -->
@@ -1351,7 +1387,7 @@ img { max-width: 100%; }
         <div class="profile-dropdown" id="profileDropdown">
           <div class="profile-dd-header">
             <div class="profile-dd-name">Dr. Riya Mehta</div>
-            <div class="profile-dd-meta">General Medicine · Room 4 · MediKiosk EMR</div>
+            <div class="profile-dd-meta" id="profileDdMeta">General Medicine · Room 4 · MediKiosk EMR</div>
             <div style="margin-top:6px;"><span class="badge badge-green" style="font-size:9px;">● Online</span> <span style="font-size:9px;color:var(--muted);margin-left:4px;">Last login: Today, 08:45 AM</span></div>
           </div>
           <button class="profile-dd-item" onclick="navigate('settings');toggleProfileMenu()">⚙️ <span>Settings &amp; Preferences</span></button>
@@ -1788,8 +1824,8 @@ img { max-width: 100%; }
           <div>
             <div class="settings-panel" id="settings-profile">
               <div class="settings-section-title">Profile Information</div>
-              <div class="form-row"><label class="form-label">Full Name</label><input class="form-input" value="Dr. Riya Mehta"></div>
-              <div class="form-row"><label class="form-label">Doctor ID</label><input class="form-input" value="DOC-1042" readonly style="background:var(--cream);color:var(--muted);"></div>
+              <div class="form-row"><label class="form-label">Full Name</label><input class="form-input" id="doctorProfileFullName" value="Doctor"></div>
+              <div class="form-row"><label class="form-label">Doctor ID</label><input class="form-input" id="doctorProfileDocId" value="" readonly style="background:var(--cream);color:var(--muted);"></div>
               <div class="form-row"><label class="form-label">Department</label><input class="form-input" value="General Medicine"></div>
               <div class="form-row"><label class="form-label">Room</label><input class="form-input" value="Room 4"></div>
               <div class="form-row"><label class="form-label">Qualification</label><input class="form-input" value="MBBS, MD (Internal Medicine)"></div>
@@ -2121,6 +2157,7 @@ let state = {
   currentApptTab: 'today',
   currentSettingsSection: 'profile',
   language: 'en',
+  currentUser: null,
 };
 
 /* ============================================================
@@ -2173,9 +2210,10 @@ function formatDate() {
 
 function getGreeting() {
   const h = new Date().getHours();
-  if (h < 12) return 'Good morning, Dr. Mehta';
-  if (h < 17) return 'Good afternoon, Dr. Mehta';
-  return 'Good evening, Dr. Mehta';
+  const name = (state.currentUser && state.currentUser.name) || 'Doctor';
+  if (h < 12) return `Good morning, ${name}`;
+  if (h < 17) return `Good afternoon, ${name}`;
+  return `Good evening, ${name}`;
 }
 
 /* ============================================================
@@ -2975,6 +3013,64 @@ function updateTopbarDate() {
 }
 
 /* ============================================================
+   AUTHENTICATION & API INTEGRATION
+============================================================ */
+const API_BASE_URL = 'http://localhost:5001/api';
+let pendingDoctorAuth = null;
+let pendingPatientAuth = null;
+let doctorChallengeToken = null;
+let selectedOtpMethod = 'email';
+let resendTimerInterval = null;
+let resendCooldownSeconds = 0;
+
+function applyDoctorProfile(user) {
+  if (!user) return;
+  const name = user.name || 'Doctor';
+  document.querySelectorAll('.sidebar-doctor-name, .profile-name, .profile-dd-name').forEach(el => {
+    el.textContent = name;
+  });
+  const greetingEl = document.getElementById('dashGreeting');
+  if (greetingEl) {
+    greetingEl.textContent = getGreeting();
+  }
+  const nameInput = document.getElementById('doctorProfileFullName');
+  if (nameInput) nameInput.value = name;
+  const docIdInput = document.getElementById('doctorProfileDocId');
+  if (docIdInput && user.doctorId) docIdInput.value = user.doctorId;
+  const metaEl = document.getElementById('profileDdMeta');
+  if (metaEl && user.doctorId) metaEl.textContent = `${user.doctorId} · General Medicine · MediKiosk EMR`;
+
+  const initials = name
+    .replace(/^Dr\.?\s+/i, '')
+    .split(' ')
+    .filter(Boolean)
+    .map(n => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || 'DR';
+  document.querySelectorAll('.sidebar-doctor-avatar, .profile-avatar').forEach(el => {
+    el.textContent = initials;
+  });
+}
+
+function applyPatientProfile(user) {
+  if (!user) return;
+  const pName = document.getElementById('patientDisplayName');
+  if (pName) pName.textContent = user.name || 'Patient';
+  const pAvatar = document.getElementById('patientAvatar');
+  if (pAvatar) {
+    const initials = (user.name || 'PS')
+      .split(' ')
+      .filter(Boolean)
+      .map(n => n[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase() || 'PS';
+    pAvatar.textContent = initials;
+  }
+}
+
+/* ============================================================
    PATIENT PORTAL
 ============================================================ */
 function switchRole(role) {
@@ -2996,21 +3092,77 @@ function setPatientMethod(method) {
   inp.value = '';
 }
 
-function sendPatientOTP() {
+async function sendPatientOTP() {
   const v = document.getElementById('patientId').value.trim();
   const isMobile = document.getElementById('mobileMethod').classList.contains('active');
-  if (!v) { alert(isMobile ? 'Please enter your registered mobile number.' : 'Please enter your ABHA ID.'); return; }
-  if (isMobile && !/^\d{10}$/.test(v)) { alert('Please enter a valid 10-digit mobile number for the demo.'); return; }
-  document.getElementById('patientOtpStep').style.display = 'block';
-  document.getElementById('patientContinueBtn').style.display = 'none';
-  document.querySelector('#patientAuthPanel .method-row').style.display = 'none';
-  document.querySelector('#patientAuthPanel > .input-group').style.display = 'none';
+  if (!v) {
+    showToast(isMobile ? 'Please enter your registered mobile number.' : 'Please enter your ABHA ID.', 'warn');
+    return;
+  }
+  if (isMobile && !/^\d{10}$/.test(v)) {
+    showToast('Please enter a valid 10-digit mobile number.', 'warn');
+    return;
+  }
+
+  const btn = document.getElementById('patientContinueBtn');
+  const originalText = btn ? btn.textContent : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Verifying with server...';
+  }
+
+  try {
+    const payload = isMobile ? { mobileNumber: v } : { abhaId: v };
+    const res = await fetch(`${API_BASE_URL}/auth/patient/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      showToast(data.message || 'Patient verification failed.', 'error');
+      return;
+    }
+
+    pendingPatientAuth = data;
+    document.getElementById('patientOtpStep').style.display = 'block';
+    document.getElementById('patientContinueBtn').style.display = 'none';
+    document.querySelector('#patientAuthPanel .method-row').style.display = 'none';
+    document.querySelector('#patientAuthPanel > .input-group').style.display = 'none';
+    showToast('Patient record verified. Enter demo OTP to proceed.', 'success');
+  } catch (err) {
+    console.error('Patient Login Request Error:', err);
+    showToast('Unable to connect to authentication backend on port 5001.', 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  }
 }
 
 function verifyPatientOTP() {
-  if (document.getElementById('patientOtp').value.trim() !== '123456') { alert('Invalid OTP. Use demo OTP 123456.'); return; }
+  const enteredOtp = document.getElementById('patientOtp').value.trim();
+  if (enteredOtp !== '123456') {
+    showToast('Invalid OTP. Use demo OTP 123456.', 'error');
+    return;
+  }
+
+  if (pendingPatientAuth && pendingPatientAuth.token) {
+    localStorage.setItem('medikiosk_token', pendingPatientAuth.token);
+    localStorage.setItem('medikiosk_user', JSON.stringify(pendingPatientAuth.user));
+    state.currentUser = pendingPatientAuth.user;
+    applyPatientProfile(pendingPatientAuth.user);
+  }
+
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('patientApp').style.display = 'block';
+  showToast('Welcome to your pre-consultation session', 'success');
+  pendingPatientAuth = null;
 }
 
 function backToPatientLogin() {
@@ -3019,62 +3171,443 @@ function backToPatientLogin() {
   document.querySelector('#patientAuthPanel .method-row').style.display = 'grid';
   document.querySelector('#patientAuthPanel > .input-group').style.display = 'block';
   document.getElementById('patientOtp').value = '';
+  pendingPatientAuth = null;
 }
 
 function patientAction(msg) { showToast(msg + ' — demo interaction'); }
+
 function patientLogout() {
+  localStorage.removeItem('medikiosk_token');
+  localStorage.removeItem('medikiosk_user');
+  state.currentUser = null;
+  pendingPatientAuth = null;
+
   document.getElementById('patientApp').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
   switchRole('patient');
   backToPatientLogin();
   document.getElementById('patientId').value = '';
+  showToast('Patient session ended.', 'info');
 }
 
 /* ============================================================
-   DOCTOR AUTH
+   DOCTOR AUTH (REAL OTP CHALLENGE FLOW)
 ============================================================ */
-function sendOTP() {
-  const id = document.getElementById('doctorId').value.trim();
-  const pw = document.getElementById('password').value.trim();
-  if (!id || !pw) { alert('Please enter your Doctor ID and password.'); return; }
-  document.getElementById('doctorLoginStep').style.display = 'none';
-  document.getElementById('doctorOtpStep').style.display = 'block';
+function selectOtpMethod(method) {
+  selectedOtpMethod = method;
+  const isEmail = method === 'email';
+  const emailCard = document.getElementById('methodEmailCard');
+  const smsCard = document.getElementById('methodSmsCard');
+  if (emailCard) emailCard.classList.toggle('active', isEmail);
+  if (smsCard) smsCard.classList.toggle('active', !isEmail);
 }
 
-function verifyOTP() {
-  if (document.getElementById('otp').value.trim() !== '123456') { alert('Invalid OTP. Use demo OTP 123456.'); return; }
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  initApp();
+function switchToMethodSelection() {
+  if (resendTimerInterval) {
+    clearInterval(resendTimerInterval);
+    resendTimerInterval = null;
+  }
+  document.getElementById('doctorOtpStep').style.display = 'none';
+  document.getElementById('doctorMethodStep').style.display = 'block';
+  const otpInput = document.getElementById('otp');
+  if (otpInput) otpInput.value = '';
+}
+
+function startResendCooldown(seconds) {
+  if (resendTimerInterval) {
+    clearInterval(resendTimerInterval);
+    resendTimerInterval = null;
+  }
+  resendCooldownSeconds = seconds;
+  const btn = document.getElementById('resendOtpBtn');
+
+  const updateBtn = () => {
+    if (resendCooldownSeconds <= 0) {
+      clearInterval(resendTimerInterval);
+      resendTimerInterval = null;
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Resend code';
+      }
+    } else {
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = `Resend in ${resendCooldownSeconds}s`;
+      }
+      resendCooldownSeconds--;
+    }
+  };
+
+  updateBtn();
+  resendTimerInterval = setInterval(updateBtn, 1000);
+}
+
+async function sendOTP() {
+  const id = document.getElementById('doctorId').value.trim();
+  const pw = document.getElementById('password').value.trim();
+  if (!id || !pw) {
+    showToast('Please enter both Doctor ID and password.', 'warn');
+    return;
+  }
+
+  const btn = document.getElementById('doctorLoginSubmitBtn') || document.querySelector('#doctorLoginStep .primary-btn');
+  const originalText = btn ? btn.textContent : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Verifying credentials...';
+  }
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/doctor/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ doctorId: id, password: pw }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      showToast(data.message || 'Invalid Doctor ID or password.', 'error');
+      return;
+    }
+
+    doctorChallengeToken = data.challengeToken;
+
+    // Populate masked email and mobile
+    const emailMethod = data.methods && data.methods.find(m => m.id === 'email');
+    const smsMethod = data.methods && data.methods.find(m => m.id === 'sms');
+
+    const emailCard = document.getElementById('methodEmailCard');
+    const smsCard = document.getElementById('methodSmsCard');
+    const changeMethodBtn = document.getElementById('changeMethodBtn');
+    const gridEl = document.getElementById('otpActionButtonsGrid');
+
+    if (emailMethod && emailMethod.available) {
+      if (emailCard) emailCard.style.display = 'flex';
+      const emailEl = document.getElementById('maskedEmailDisplay');
+      if (emailEl) emailEl.textContent = emailMethod.destination;
+      selectOtpMethod('email');
+    } else {
+      if (emailCard) emailCard.style.display = 'none';
+    }
+
+    if (smsMethod && smsMethod.available) {
+      if (smsCard) smsCard.style.display = 'flex';
+      const smsEl = document.getElementById('maskedSmsDisplay');
+      if (smsEl) smsEl.textContent = smsMethod.destination;
+      if (changeMethodBtn) changeMethodBtn.style.display = 'inline-block';
+      if (gridEl) gridEl.style.gridTemplateColumns = '1fr 1fr';
+    } else {
+      if (smsCard) smsCard.style.display = 'none';
+      if (changeMethodBtn) changeMethodBtn.style.display = 'none';
+      if (gridEl) gridEl.style.gridTemplateColumns = '1fr';
+    }
+
+    document.getElementById('doctorLoginStep').style.display = 'none';
+    document.getElementById('doctorMethodStep').style.display = 'block';
+    document.getElementById('doctorOtpStep').style.display = 'none';
+
+    showToast('Credentials verified. Choose an OTP delivery channel.', 'success');
+  } catch (err) {
+    console.error('Doctor Login Request Error:', err);
+    showToast('Unable to connect to authentication backend on port 5001.', 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  }
+}
+
+async function requestOtpDispatch() {
+  if (!doctorChallengeToken) {
+    showToast('Session challenge expired. Please sign in again.', 'error');
+    backToDoctorLogin();
+    return;
+  }
+
+  const btn = document.getElementById('sendOtpBtn');
+  const originalText = btn ? btn.textContent : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Dispatching code...';
+  }
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/doctor/send-otp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        challengeToken: doctorChallengeToken,
+        method: selectedOtpMethod,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      showToast(data.message || 'Failed to dispatch verification code.', 'error');
+      return;
+    }
+
+    document.getElementById('doctorMethodStep').style.display = 'none';
+    document.getElementById('doctorOtpStep').style.display = 'block';
+
+    const noticeEl = document.getElementById('otpSentNotice');
+    if (noticeEl) {
+      noticeEl.textContent = `A 6-digit verification code has been dispatched to ${data.maskedDestination}. Valid for 5 minutes.`;
+    }
+
+    const otpInput = document.getElementById('otp');
+    if (otpInput) {
+      otpInput.value = '';
+      otpInput.focus();
+    }
+
+    startResendCooldown(data.cooldownSeconds || 45);
+
+    if (data.delivery && data.delivery.status === 'provider_configuration_required') {
+      showToast(data.delivery.error || 'Provider configuration required: Set credentials in server/.env', 'warn');
+    } else {
+      showToast(`Code dispatched to ${data.maskedDestination}`, 'success');
+    }
+  } catch (err) {
+    console.error('Send OTP Error:', err);
+    showToast('Error communicating with authentication backend.', 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  }
+}
+
+async function verifyOTP() {
+  const enteredOtp = document.getElementById('otp').value.trim();
+  if (!enteredOtp || enteredOtp.length !== 6) {
+    showToast('Please enter the complete 6-digit code.', 'warn');
+    return;
+  }
+
+  if (!doctorChallengeToken) {
+    showToast('Session expired. Please sign in again.', 'error');
+    backToDoctorLogin();
+    return;
+  }
+
+  const btn = document.getElementById('verifyOtpBtn') || document.querySelector('#doctorOtpStep .primary-btn');
+  const originalText = btn ? btn.textContent : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Verifying code...';
+  }
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/doctor/verify-otp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        challengeToken: doctorChallengeToken,
+        otp: enteredOtp,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      showToast(data.message || 'Invalid verification code.', 'error');
+      if (data.locked || data.isExpired) {
+        setTimeout(() => {
+          switchToMethodSelection();
+        }, 1800);
+      }
+      return;
+    }
+
+    if (resendTimerInterval) {
+      clearInterval(resendTimerInterval);
+      resendTimerInterval = null;
+    }
+
+    localStorage.setItem('medikiosk_token', data.token);
+    localStorage.setItem('medikiosk_user', JSON.stringify(data.user));
+    state.currentUser = data.user;
+    applyDoctorProfile(data.user);
+
+    doctorChallengeToken = null;
+
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    initApp();
+    showToast('Welcome back, ' + ((data.user && data.user.name) || 'Doctor'), 'success');
+  } catch (err) {
+    console.error('Verify OTP Error:', err);
+    showToast('Error communicating with authentication backend.', 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  }
+}
+
+async function resendOTP() {
+  if (!doctorChallengeToken) {
+    showToast('Session challenge expired. Please sign in again.', 'error');
+    backToDoctorLogin();
+    return;
+  }
+
+  if (resendCooldownSeconds > 0) {
+    showToast(`Please wait ${resendCooldownSeconds}s before resending.`, 'warn');
+    return;
+  }
+
+  const btn = document.getElementById('resendOtpBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Resending code...';
+  }
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/doctor/resend-otp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ challengeToken: doctorChallengeToken }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      showToast(data.message || 'Failed to resend code.', 'error');
+      return;
+    }
+
+    startResendCooldown(data.cooldownSeconds || 45);
+
+    const noticeEl = document.getElementById('otpSentNotice');
+    if (noticeEl) {
+      noticeEl.textContent = `A fresh 6-digit code has been dispatched to ${data.maskedDestination}. Valid for 5 minutes.`;
+    }
+
+    const otpInput = document.getElementById('otp');
+    if (otpInput) {
+      otpInput.value = '';
+      otpInput.focus();
+    }
+
+    if (data.delivery && data.delivery.status === 'provider_configuration_required') {
+      showToast(data.delivery.error || 'Provider configuration required: Set credentials in server/.env', 'warn');
+    } else {
+      showToast(`New code dispatched to ${data.maskedDestination}`, 'success');
+    }
+  } catch (err) {
+    console.error('Resend OTP Error:', err);
+    showToast('Error communicating with backend.', 'error');
+  }
 }
 
 function backToDoctorLogin() {
+  if (resendTimerInterval) {
+    clearInterval(resendTimerInterval);
+    resendTimerInterval = null;
+  }
   document.getElementById('doctorLoginStep').style.display = 'block';
+  document.getElementById('doctorMethodStep').style.display = 'none';
   document.getElementById('doctorOtpStep').style.display = 'none';
-  document.getElementById('otp').value = '';
+  const otpInput = document.getElementById('otp');
+  if (otpInput) otpInput.value = '';
+  doctorChallengeToken = null;
 }
 
 function logout() {
+  if (resendTimerInterval) {
+    clearInterval(resendTimerInterval);
+    resendTimerInterval = null;
+  }
+  localStorage.removeItem('medikiosk_token');
+  localStorage.removeItem('medikiosk_user');
+  state.currentUser = null;
+  doctorChallengeToken = null;
+  pendingDoctorAuth = null;
+
   document.getElementById('app').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('doctorLoginStep').style.display = 'block';
+  document.getElementById('doctorMethodStep').style.display = 'none';
   document.getElementById('doctorOtpStep').style.display = 'none';
   document.getElementById('doctorId').value = '';
   document.getElementById('password').value = '';
-  document.getElementById('otp').value = '';
+  const otpInput = document.getElementById('otp');
+  if (otpInput) otpInput.value = '';
   switchRole('doctor');
   closeProfileMenu();
   closeNotifPanel();
+  showToast('Logged out successfully.', 'info');
 }
 
 /* ============================================================
-   INIT
+   SESSION RESTORATION & INIT
 ============================================================ */
+async function checkExistingSession() {
+  const token = localStorage.getItem('medikiosk_token');
+  if (!token) return;
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/me`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) {
+      localStorage.removeItem('medikiosk_token');
+      localStorage.removeItem('medikiosk_user');
+      return;
+    }
+
+    const data = await res.json();
+    if (data.success && data.user) {
+      state.currentUser = data.user;
+      localStorage.setItem('medikiosk_user', JSON.stringify(data.user));
+
+      document.getElementById('loginScreen').style.display = 'none';
+      if (data.user.role === 'doctor' || data.user.role === 'admin') {
+        document.getElementById('app').style.display = 'block';
+        applyDoctorProfile(data.user);
+        initApp();
+      } else if (data.user.role === 'patient') {
+        document.getElementById('patientApp').style.display = 'block';
+        applyPatientProfile(data.user);
+      }
+    }
+  } catch (err) {
+    console.warn('Session restoration check error:', err);
+  }
+}
+
 function initApp() {
   updateTopbarDate();
   setInterval(updateTopbarDate, 60000);
   navigate('dashboard');
 }
+
+// Development / Demo Mode: Always start explicitly at the Login Screen on page load/reload
+document.getElementById('loginScreen').style.display = 'flex';
+document.getElementById('app').style.display = 'none';
+document.getElementById('patientApp').style.display = 'none';
+document.getElementById('doctorLoginStep').style.display = 'block';
+document.getElementById('doctorMethodStep').style.display = 'none';
+document.getElementById('doctorOtpStep').style.display = 'none';
 
 // Keyboard shortcuts
 document.addEventListener('keydown', e => {
@@ -3087,3 +3620,4 @@ document.addEventListener('keydown', e => {
 </script>
 </body>
 </html>
+
