@@ -1,0 +1,90 @@
+[
+  {
+    "patientId": "PAT-1001",
+    "chiefComplaint": "Persistent dry cough and mild fever",
+    "symptoms": [
+      "Cough",
+      "Fever",
+      "Throat irritation"
+    ],
+    "symptomDuration": "3 days",
+    "severity": "Moderate",
+    "allergies": [
+      "Penicillin"
+    ],
+    "currentMedications": [
+      "Paracetamol 500mg as needed"
+    ],
+    "pastMedicalHistory": [
+      "Mild seasonal allergies"
+    ],
+    "familyHistory": [
+      "Father: Hypertension"
+    ],
+    "lifestyle": {
+      "smoking": "Non-smoker",
+      "alcohol": "No",
+      "physicalActivity": "Moderate"
+    },
+    "additionalNotes": "Patient reports symptoms started after travel.",
+    "createdAt": "2026-08-31T12:00:00.000Z",
+    "updatedAt": "2026-08-31T12:00:00.000Z"
+  },
+  {
+    "patientId": "PAT-2002",
+    "chiefComplaint": "Chest discomfort and shortness of breath upon exertion",
+    "symptoms": [
+      "Shortness of breath",
+      "Chest heaviness",
+      "Fatigue"
+    ],
+    "symptomDuration": "1 week",
+    "severity": "Moderate",
+    "allergies": [
+      "Sulfa drugs",
+      "Peanuts"
+    ],
+    "currentMedications": [
+      "Amlodipine 5mg OD"
+    ],
+    "pastMedicalHistory": [
+      "Type 2 Diabetes (5 yrs)",
+      "Hypertension (3 yrs)"
+    ],
+    "familyHistory": [
+      "Mother: Cardiac arrest at 60"
+    ],
+    "lifestyle": {
+      "smoking": "Former smoker (quit 2 yrs ago)",
+      "alcohol": "Occasional",
+      "physicalActivity": "Low (sedentary)"
+    },
+    "additionalNotes": "Patient visited cardiology clinic. ECG normal. Prescribed lifestyle modification.",
+    "createdAt": "2026-08-31T19:12:37.818Z",
+    "updatedAt": "2026-08-31T19:12:45.393Z"
+  },
+  {
+    "patientId": "P-1042",
+    "chiefComplaint": "Chest tightness and fatigue on exertion",
+    "symptoms": [
+      "Chest tightness",
+      "Fatigue"
+    ],
+    "symptomDuration": "2-3 days",
+    "severity": "Moderate",
+    "allergies": [
+      "No known allergies"
+    ],
+    "currentMedications": [
+      "Telmisartan 40mg"
+    ],
+    "pastMedicalHistory": [],
+    "familyHistory": [],
+    "lifestyle": {
+      "notes": ""
+    },
+    "additionalNotes": "",
+    "createdAt": "2026-09-03T05:25:53.797Z",
+    "updatedAt": "2026-09-03T05:25:53.797Z"
+  }
+]
