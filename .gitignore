@@ -1,4 +1,9 @@
 node_modules/
 .env
+.env.*
+server/.env
+server/.env.*
+!.env.example
+!server/.env.example
 dist/
 build/
