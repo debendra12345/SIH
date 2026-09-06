@@ -25,9 +25,9 @@
   --muted:       #718096;
   --border:      #E2E8F0;
   --border-dark: #CBD5E0;
-  --red:         #C53030;
-  --red-mid:     #E53E3E;
-  --red-light:   #FFF5F5;
+  --red:         #5B5FC7;
+  --red-mid:     #7C83D8;
+  --red-light:   #EEF2FF;
   --green:       #276749;
   --green-mid:   #38A169;
   --green-light: #F0FFF4;
@@ -279,6 +279,38 @@ img { max-width: 100%; }
 .patient-privacy { margin-top: 14px; padding: 13px; background: #f2f8f7; border: 1px solid #dcefeb; border-radius: 10px; color: #38615d; font-size: 10px; line-height: 1.55; }
 .patient-logout { margin-top: 12px; padding: 11px 14px; background: white; border: 1px solid var(--border); border-radius: 9px; color: #53616e; font-size: 11px; font-weight: 700; width: 100%; transition: var(--transition); }
 .patient-logout:hover { background: var(--red-light); color: var(--red); border-color: #FEB2B2; }
+.patient-nav {
+  display: flex; gap: 8px; overflow-x: auto; padding: 10px 0 2px;
+  margin-bottom: 16px; scrollbar-width: none;
+}
+.patient-nav::-webkit-scrollbar { display: none; }
+.patient-nav button {
+  flex: 0 0 auto; padding: 9px 13px; border: 1px solid var(--border);
+  border-radius: 10px; background: white; color: var(--text-sub);
+  font-size: 11px; font-weight: 700; transition: var(--transition);
+}
+.patient-nav button:hover, .patient-nav button.active {
+  color: var(--teal-dark); border-color: var(--teal-mid); background: var(--teal-light);
+}
+.patient-highlight {
+  border: 1px solid #B8DDF7; border-radius: var(--radius-lg); padding: 20px;
+  background: linear-gradient(135deg, #EFF8FF, #F4F1FF); box-shadow: var(--shadow-sm);
+}
+.patient-highlight h2 { color: var(--navy); font-size: 20px; margin-top: 4px; }
+.patient-highlight p { color: var(--text-sub); margin-top: 6px; max-width: 620px; }
+.patient-summary-cards {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 14px;
+}
+.patient-summary-card {
+  padding: 14px; border: 1px solid var(--border); border-radius: var(--radius);
+  background: white; transition: var(--transition);
+}
+.patient-summary-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); border-color: var(--teal-mid); }
+.patient-summary-card b { display: block; font-size: 13px; color: var(--navy); }
+.patient-summary-card span { display: block; margin-top: 5px; font-size: 11px; color: var(--muted); }
+@media (max-width: 768px) {
+  .patient-summary-cards { grid-template-columns: 1fr; }
+}
 .meta-box.clickable { cursor: pointer; transition: var(--transition); }
 .meta-box.clickable:hover { border-color: var(--teal); background: #F0FDF4; transform: translateY(-1px); box-shadow: var(--shadow-sm); }
 .patient-chip-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
@@ -320,6 +352,18 @@ img { max-width: 100%; }
   z-index: 100;
   overflow: hidden;
 }
+.sidebar-resizer {
+  position: fixed; z-index:110; top:0; bottom:0;
+  left:calc(var(--sidebar-w) - 4px); width:8px;
+  cursor:col-resize; touch-action:none;
+}
+.sidebar-resizer::after {
+  content:""; position:absolute; top:50%; left:2px; width:3px; height:54px;
+  border-radius:999px; background:rgba(15,159,154,.24); opacity:0;
+  transform:translateY(-50%); transition:opacity .18s ease, background .18s ease;
+}
+.sidebar-resizer:hover::after, body.sidebar-resizing .sidebar-resizer::after { opacity:1; background:#39c7bf; }
+body.sidebar-resizing { cursor:col-resize; user-select:none; }
 .sidebar-header {
   padding: 22px 20px 18px;
   border-bottom: 1px solid rgba(255,255,255,.08);
@@ -679,6 +723,9 @@ img { max-width: 100%; }
 .alert-token { font-size: 10px; color: var(--muted); margin-top: 2px; }
 .alert-type { font-size: 9px; font-weight: 800; color: var(--red); text-transform: uppercase; letter-spacing: .5px; background: rgba(197,48,48,.1); padding: 3px 8px; border-radius: 50px; }
 .alert-card.amber .alert-type { color: var(--amber); background: rgba(183,121,31,.1); }
+.priority-critical { background: #FFF8E7; color: #976A12; border: 1px solid #F5D98B; }
+.alert-card:not(.amber) { border-left: 3px solid #D6B35A; }
+.alert-card:not(.amber) .alert-type { color: #976A12; background: rgba(183,121,31,.1); }
 .alert-complaint { font-size: 12px; color: var(--text-sub); line-height: 1.5; margin-bottom: 10px; }
 .alert-source { font-size: 10px; color: var(--muted); margin-bottom: 12px; }
 .alert-actions { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -1253,6 +1300,7 @@ img { max-width: 100%; }
   .nav-badge, .nav-badge-teal { position: absolute; top: 4px; right: 4px; }
   .sidebar-footer .signout-btn span { display: none; }
   .signout-btn { justify-content: center; }
+  .sidebar-resizer { display:none; }
 }
 @media (max-width: 768px) {
   .login-container { grid-template-columns: 1fr; }
@@ -1276,6 +1324,266 @@ img { max-width: 100%; }
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* Phase 2 clinical workflow accents */
+.intake-conversation { background:linear-gradient(135deg,#f5fbff,#f7f4ff); border:1px solid #dbeafe; border-radius:16px; padding:16px; }
+.intake-question { font-size:20px; line-height:1.35; color:var(--navy); font-weight:800; margin:8px 0 14px; }
+.intake-bubble { padding:11px 13px; border-radius:12px; background:white; border:1px solid var(--border); font-size:12px; line-height:1.55; }
+.intake-bubble.ai { border-left:3px solid var(--teal); }
+.intake-progress { height:7px; background:#e6edf4; border-radius:20px; overflow:hidden; margin-top:10px; }
+.intake-progress > i { display:block; height:100%; background:linear-gradient(90deg,var(--teal),#6366f1); transition:width .35s ease; }
+.voice-btn.listening { background:#e0f2fe; color:#0369a1; border-color:#7dd3fc; animation:pulseVoice 1.1s ease-in-out infinite; }
+@keyframes pulseVoice { 50% { box-shadow:0 0 0 6px rgba(14,165,233,.14); } }
+.source-status { display:inline-flex; align-items:center; gap:5px; padding:3px 8px; border-radius:50px; font-size:9px; font-weight:800; background:#eef2ff; color:#4f46e5; }
+.source-status.verified { background:#ecfdf5; color:#047857; }
+.alert-card, .alert-card.amber { border-left-color:#7c83d8; border-color:#c7d2fe; background:#f5f3ff; }
+.alert-type, .alert-card.amber .alert-type, .alert-card:not(.amber) .alert-type { color:#4f46e5; background:#eef2ff; }
+.badge-red, .priority-critical { background:#eef2ff; color:#4f46e5; border-color:#c7d2fe; }
+.admin-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:20px 0; }
+.admin-stat { background:#fff; border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px; box-shadow:var(--shadow-sm); }
+.admin-stat .metric-value { font-size:28px; }
+.admin-layout { display:grid; grid-template-columns:1.25fr .75fr; gap:18px; }
+.admin-list { display:grid; gap:10px; }
+.admin-list-row { display:flex; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid #f1f5f9; }
+.admin-list-row:last-child { border-bottom:0; }
+.system-dot { width:9px; height:9px; border-radius:50%; background:#34d399; box-shadow:0 0 0 4px #d1fae5; }
+@media (max-width:900px) { .admin-grid { grid-template-columns:repeat(2,1fr); } .admin-layout { grid-template-columns:1fr; } }
+@media (max-width:520px) { .admin-grid { grid-template-columns:1fr; } }
+.timeline-card { margin-top:14px; border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px; background:#fff; }
+.timeline-item { display:flex; gap:12px; padding:10px 0; border-bottom:1px solid #f1f5f9; }
+.timeline-item:last-child { border-bottom:0; }
+.timeline-dot { width:10px; height:10px; margin-top:5px; flex:0 0 10px; border-radius:50%; background:var(--teal); box-shadow:0 0 0 4px var(--teal-light); }
+@media (max-width:768px) { .intake-question { font-size:18px; } .intake-conversation { padding:13px; } .patient-topbar { padding:0 16px; } }
+
+/* Phase 5 premium clinical interface */
+:root {
+  --navy: #102a43;
+  --navy-light: #1f4e79;
+  --teal: #0f9f9a;
+  --teal-dark: #087f7b;
+  --teal-light: #e8f8f7;
+  --blue: #2878b5;
+  --blue-light: #edf6fc;
+  --cream: #f4f8fb;
+  --text: #17324d;
+  --text-sub: #526b82;
+  --muted: #7790a5;
+  --border: #dce7ef;
+  --border-dark: #b9cad8;
+  --shadow-sm: 0 2px 8px rgba(16,42,67,.06);
+  --shadow: 0 10px 28px rgba(16,42,67,.08);
+  --shadow-md: 0 18px 46px rgba(16,42,67,.12);
+  --radius-sm: 10px;
+  --radius: 14px;
+  --radius-lg: 20px;
+}
+body { background: linear-gradient(145deg,#f7fbfd 0%,#edf5f9 100%); }
+button, input, select, textarea { min-height: 40px; }
+button { transition: transform .2s ease, box-shadow .2s ease, background-color .2s ease, border-color .2s ease; }
+button:active { transform: translateY(1px); }
+.login-screen {
+  position: relative; overflow: hidden; padding: 44px 28px;
+  background: radial-gradient(circle at 8% 15%,rgba(15,159,154,.16),transparent 32%),
+              radial-gradient(circle at 92% 82%,rgba(40,120,181,.16),transparent 34%),
+              linear-gradient(135deg,#f6fbfd,#eaf3f7);
+}
+.login-screen::before, .login-screen::after {
+  content:""; position:absolute; border:1px solid rgba(15,159,154,.14);
+  border-radius:50%; pointer-events:none; animation: drift 12s ease-in-out infinite alternate;
+}
+.login-screen::before { width:540px; height:540px; left:-240px; top:-210px; }
+.login-screen::after { width:420px; height:420px; right:-170px; bottom:-170px; animation-delay:-4s; }
+.login-container { position:relative; z-index:1; max-width:1180px; border-radius:26px; border:1px solid rgba(255,255,255,.85); box-shadow:var(--shadow-md); }
+.login-brand { padding:58px 54px; background:linear-gradient(145deg,#102a43 0%,#164d70 58%,#0f9f9a 130%); }
+.login-brand h1 { font-size:clamp(34px,4vw,52px); letter-spacing:-1.6px; line-height:1.06; }
+.login-brand > p { font-size:14px; max-width:430px; }
+.login-brand::before {
+  content:"PATIENT  →  AI INTAKE  →  PHYSICIAN";
+  position:absolute; right:28px; bottom:28px; padding:10px 12px;
+  border:1px solid rgba(255,255,255,.22); border-radius:999px;
+  color:rgba(255,255,255,.8); font-size:9px; letter-spacing:1.1px; font-weight:800;
+  background:rgba(255,255,255,.08);
+}
+.brand-feature div { padding:9px 12px; margin:9px 0; border:1px solid rgba(255,255,255,.12); border-radius:10px; background:rgba(255,255,255,.06); }
+.login-form { padding:52px 54px; background:rgba(255,255,255,.97); }
+.login-form h2 { font-size:30px; letter-spacing:-.7px; }
+.primary-btn { min-height:46px; border-radius:11px; box-shadow:0 6px 14px rgba(15,159,154,.18); }
+.primary-btn:hover { transform:translateY(-1px); box-shadow:0 9px 20px rgba(15,159,154,.24); }
+.secondary-btn, .btn-sm { min-height:40px; border-radius:10px; }
+.input-group input, .input-group select, .input-group textarea { min-height:46px; border-radius:11px; border-color:#cfdee8; background:#fbfdfe; }
+.input-group input:focus, .input-group select:focus, .input-group textarea:focus { border-color:var(--teal); box-shadow:0 0 0 4px rgba(15,159,154,.12); }
+.patient-app { background:linear-gradient(145deg,#f6fafc,#edf5f8); }
+.patient-topbar { height:72px; padding:0 max(24px,calc((100vw - 1180px)/2)); border-bottom:1px solid rgba(220,231,239,.9); background:rgba(255,255,255,.88); backdrop-filter:blur(14px); }
+.patient-brand { font-size:20px; letter-spacing:-.4px; }
+.patient-brand span, .mini-avatar { box-shadow:0 4px 12px rgba(15,159,154,.18); }
+.patient-main { max-width:1180px; padding:24px 22px 64px; }
+.patient-nav { gap:6px; padding:5px; margin:0 0 22px; border:1px solid var(--border); border-radius:14px; background:rgba(255,255,255,.76); box-shadow:var(--shadow-sm); }
+.patient-nav button { min-height:42px; padding:10px 15px; border:0; border-radius:10px; }
+.patient-nav button:hover, .patient-nav button.active { background:var(--navy); color:white; box-shadow:0 4px 10px rgba(16,42,67,.15); }
+.welcome-card { padding:32px 36px; border-radius:22px; background:linear-gradient(125deg,#102a43,#1e577a 62%,#0f9f9a); box-shadow:var(--shadow-md); }
+.welcome-card h1 { font-size:32px; letter-spacing:-.8px; }
+.token-box { min-width:150px; padding:17px 20px; border-radius:16px; border:1px solid rgba(255,255,255,.22); background:rgba(255,255,255,.12); }
+.patient-grid { gap:20px; margin-top:20px; }
+.patient-card, .patient-side-card, .detail-card, .panel, .admin-stat { border-radius:18px; border-color:var(--border); box-shadow:var(--shadow-sm); }
+.patient-highlight { border-radius:17px; padding:24px; background:linear-gradient(135deg,#eef9fb,#f3f6ff); }
+.patient-highlight h2 { font-size:24px; letter-spacing:-.4px; }
+.patient-summary-card { padding:18px; border-radius:14px; }
+.patient-summary-card:hover, .patient-step:hover, .record-card:hover { transform:translateY(-2px); box-shadow:var(--shadow-sm); }
+.patient-step { min-height:72px; padding:16px; border-radius:14px; }
+.patient-step button { min-height:38px; }
+.timeline-card { border-radius:18px; box-shadow:var(--shadow-sm); }
+.timeline-item { padding:14px 4px; }
+.timeline-dot { background:var(--blue); box-shadow:0 0 0 5px var(--blue-light); }
+.sidebar { background:linear-gradient(180deg,#102a43 0%,#123b59 100%); box-shadow:8px 0 24px rgba(16,42,67,.08); }
+.sidebar-header { padding:24px 20px 20px; }
+.sidebar-logo { font-size:20px; }
+.nav-item { border-radius:10px; margin:3px 0; min-height:42px; }
+.nav-item.active { background:rgba(117,221,215,.14); box-shadow:inset 3px 0 0 #75ddd7; }
+.doctor-topbar { height:72px; border-bottom-color:var(--border); background:rgba(255,255,255,.86); backdrop-filter:blur(14px); }
+.content { padding:30px 34px 48px; }
+.page-title { font-size:30px; letter-spacing:-.8px; }
+.stats-grid { gap:14px; }
+.stat-card { border-radius:16px; border-color:var(--border); box-shadow:var(--shadow-sm); transition:var(--transition); }
+.stat-card:hover { transform:translateY(-3px); box-shadow:var(--shadow); border-color:#b7d9e7; }
+.panel-header { padding:20px 22px; }
+.record-card { padding:18px 22px; }
+.record-icon { border-radius:12px; background:var(--blue-light); }
+.alert-card, .alert-card.amber { border-left:3px solid #d6a94a; border-color:#ead9a9; background:#fffaf0; border-radius:14px; }
+.ai-badge, .source-status { padding:5px 9px; border-radius:999px; }
+.view-container { animation:fadeSlideIn .28s ease both; }
+@keyframes drift { from { transform:translate3d(0,0,0) scale(1); } to { transform:translate3d(18px,14px,0) scale(1.04); } }
+@media (max-width:900px) {
+  .login-form { padding:38px 30px; }
+  .content { padding:24px 20px 40px; }
+}
+@media (max-width:768px) {
+  .login-screen { padding:18px 12px; }
+  .login-form { padding:30px 22px; }
+  .patient-main { padding:16px 14px 44px; }
+  .patient-nav { overflow-x:auto; }
+  .patient-nav button { flex:0 0 auto; }
+  .welcome-card { padding:24px; }
+  .welcome-card h1 { font-size:27px; }
+  .doctor-topbar { padding:0 10px; gap:8px; }
+  .topbar-search-wrap { min-width:0; }
+  .topbar-meta { display:none; }
+  .profile-btn { padding-right:5px; }
+  .profile-btn .profile-name, .profile-btn .profile-role { display:none; }
+  .patient-header-card { flex-direction:column; padding:18px; }
+  .patient-header-actions { width:100%; }
+  .patient-header-actions .detail-action { flex:1 1 46%; }
+  .sticky-action-bar { margin:0 -20px -30px; padding:12px 16px; flex-wrap:wrap; }
+  .sticky-action-bar .ai-disclaimer { flex:1 0 100%; max-width:none; margin:0 0 4px; }
+  .sticky-action-bar .btn-sm { flex:1 1 44%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .login-screen::before, .login-screen::after { animation:none; }
+}
+
+/* ============================================================
+   MEDIKIOSK CLINICAL WORKSPACE — VISUAL SYSTEM
+============================================================ */
+:root {
+  --color-primary: #102a43;
+  --color-secondary: #0f9f9a;
+  --color-surface: #ffffff;
+  --color-muted: #66788a;
+  --color-border: #d9e5ec;
+  --color-text: #102a43;
+  --color-success: #16856f;
+  --lavender: #eef0ff;
+  --sky: #eaf6ff;
+}
+.patient-app { background:#f4f8fb; }
+.patient-main { max-width:1240px; padding-top:28px; }
+.patient-nav { border:0; box-shadow:none; background:transparent; padding:0; margin-bottom:18px; }
+.patient-nav button { background:transparent; color:#607487; min-height:36px; padding:8px 11px; }
+.patient-nav button:hover, .patient-nav button.active { background:#e5f5f3; color:#087b72; box-shadow:none; }
+/* Legacy portal markup is deliberately restyled as an open clinical workspace. */
+.welcome-card { position:relative; overflow:hidden; min-height:0; padding:42px 44px 38px; border-radius:26px 26px 8px 8px; background:linear-gradient(122deg,#0c2943 0%,#174e70 62%,#147f83 130%); }
+.welcome-card::before { content:""; position:absolute; width:330px; height:330px; right:-105px; top:-128px; border:1px solid rgba(185,243,242,.3); border-radius:50%; box-shadow:0 0 0 38px rgba(160,236,235,.055),0 0 0 76px rgba(160,236,235,.035); }
+.welcome-card h1 { max-width:620px; font-size:clamp(30px,3.4vw,46px); line-height:1.05; letter-spacing:-1.5px; }.welcome-card > div > p { font-size:15px; max-width:620px; }
+.token-box { position:relative; z-index:1; align-self:flex-start; border-radius:16px; }.patient-grid { grid-template-columns:minmax(0,1fr) 310px; gap:30px; margin-top:28px; }
+.patient-grid > .patient-card { padding:0; border:0; border-radius:0; box-shadow:none; background:transparent; }.patient-highlight { position:relative; margin:0; padding:0 0 25px; border:0; border-bottom:1px solid var(--color-border); border-radius:0; background:transparent; box-shadow:none; }.patient-highlight h2 { margin-top:5px; font-size:25px; letter-spacing:-.6px; }.patient-highlight p { max-width:600px; font-size:14px; }.patient-highlight .primary-btn { width:auto !important; min-width:265px; min-height:56px; padding:0 22px; border-radius:13px; background:#0f9f9a; font-size:14px; box-shadow:0 9px 22px rgba(15,159,154,.25); }.patient-highlight .primary-btn:hover { transform:translateY(-2px); }
+.patient-summary-cards { margin-top:37px; gap:0; border-top:1px solid var(--color-border); border-bottom:1px solid var(--color-border); }.patient-summary-card { min-height:104px; padding:18px 16px; border:0; border-right:1px solid var(--color-border); border-radius:0; background:transparent; }.patient-summary-card:last-child { border:0; }.patient-summary-card b { color:#718497; font-size:10px; letter-spacing:.75px; text-transform:uppercase; }.patient-summary-card span { margin-top:9px; color:#173b51; font-size:13px; line-height:1.4; }
+.timeline-card { margin:34px 0 0; padding:0; border:0; border-radius:0; box-shadow:none; background:transparent; }.timeline-card > div:first-child h3 { color:#102a43; font-size:25px !important; letter-spacing:-.6px; }.timeline-card > div:first-child h3::before { content:"LONGITUDINAL RECORD"; display:block; margin-bottom:6px; color:#159089; font-size:10px; font-weight:800; letter-spacing:1.1px; }.timeline-item { position:relative; padding:16px 0 16px 24px; border-bottom:1px solid #e4edf1; }.timeline-item::before { content:""; position:absolute; left:5px; top:27px; bottom:-27px; width:1px; background:#c8dce2; }.timeline-item:last-child::before { display:none; }.timeline-dot { position:absolute; left:0; top:20px; width:11px; height:11px; box-shadow:0 0 0 5px #e9f7f6; background:#0f9f9a; }
+.patient-grid > aside.patient-card { position:sticky; top:92px; padding:0; }.patient-grid > aside.patient-card h2 { font-size:0; }.patient-grid > aside.patient-card h2::before { content:"CURRENT SESSION"; display:block; margin-bottom:6px; color:#159089; font-size:10px; letter-spacing:1px; }.patient-grid > aside.patient-card h2::after { content:"Session status"; display:block; color:#102a43; font-size:18px; letter-spacing:-.35px; }.meta-grid-2 { display:block; margin:20px 0 0 !important; padding:13px 0; border-top:1px solid var(--color-border); border-bottom:1px solid var(--color-border); }.meta-box { display:flex; justify-content:space-between; align-items:center; min-height:40px; padding:8px 0; border:0; background:transparent; }.meta-box-label { font-size:10px; letter-spacing:.7px; }.meta-box-value { font-size:12px; text-align:right; }.patient-privacy { border:0; border-left:2px solid #79cfc9; border-radius:0; background:#eaf6f5; }.steps { margin-top:12px; }.patient-step { padding:13px 0; border:0; border-bottom:1px solid #e4edf1; border-radius:0; background:transparent; }.patient-step:hover { transform:none; background:#f7fbfc; }.step-icon { border-radius:50%; }
+/* Doctor workspace: queue-first clinical command surface, not an analytics wall. */
+.page-header { padding-bottom:20px; border-bottom:1px solid var(--color-border); }.page-greeting { color:#168f87; font-size:11px; font-weight:800; letter-spacing:1px; text-transform:uppercase; }.stats-grid { gap:0; margin:0 !important; border-bottom:1px solid var(--color-border); }.stat-card { min-height:128px; padding:20px 16px; border:0; border-right:1px solid var(--color-border); border-radius:0; box-shadow:none; background:transparent; }.stat-card:last-child { border:0; }.stat-card:hover { transform:none; box-shadow:none; background:#f8fcfd; }.dash-grid { margin-top:28px; gap:30px; }.panel { border:0; border-radius:0; box-shadow:none; background:transparent; }.panel-header { padding:0 0 14px; border-bottom:1px solid var(--color-border); }.panel-header h3 { font-size:18px; letter-spacing:-.3px; }.queue-patient { border-radius:0; border-width:0 0 1px; padding:16px 4px; }.queue-patient:hover { background:#f7fbfc; }.alert-card { box-shadow:none; }
+.patient-workspace { display:grid; grid-template-columns:minmax(0,1fr) 310px; gap:30px; align-items:start; }
+.patient-flow { min-width:0; }
+.intake-hero { position:relative; overflow:hidden; padding:42px 44px 30px; color:white; border-radius:26px 26px 8px 8px; background:linear-gradient(122deg,#0c2943 0%,#174e70 62%,#147f83 130%); isolation:isolate; }
+.intake-hero::before { content:""; position:absolute; z-index:-1; width:330px; height:330px; right:-105px; top:-128px; border:1px solid rgba(185,243,242,.3); border-radius:50%; box-shadow:0 0 0 38px rgba(160,236,235,.055),0 0 0 76px rgba(160,236,235,.035); }
+.intake-hero::after { content:""; position:absolute; z-index:-1; width:180px; height:180px; left:48%; bottom:-130px; border-radius:50%; background:radial-gradient(circle,rgba(130,229,224,.35),transparent 68%); }
+.hero-eyebrow { display:flex; align-items:center; gap:8px; color:#b9ebe9; font-size:10px; font-weight:800; letter-spacing:1.3px; text-transform:uppercase; }
+.ai-pulse { width:8px; height:8px; border-radius:50%; background:#7ce2dc; box-shadow:0 0 0 0 rgba(124,226,220,.7); animation:aiPulse 2s infinite; }
+.intake-hero h1 { max-width:620px; margin:13px 0 10px; font-size:clamp(30px,3.4vw,46px); line-height:1.05; letter-spacing:-1.5px; }
+.intake-hero p { max-width:620px; color:#d7e9ee; font-size:15px; line-height:1.65; }
+.clinical-cta { display:inline-flex; align-items:center; gap:14px; margin-top:24px; padding:15px 20px; min-height:56px; border-radius:14px; color:#0d364d; background:white; font-size:14px; font-weight:800; box-shadow:0 10px 30px rgba(0,0,0,.18); }
+.clinical-cta small { display:block; color:#618090; font-size:10px; font-weight:700; }
+.clinical-cta:hover { transform:translateY(-3px); box-shadow:0 16px 34px rgba(0,0,0,.24); }
+.hero-context { display:flex; flex-wrap:wrap; gap:9px 18px; margin-top:25px; color:#c5e8e9; font-size:11px; font-weight:700; }
+.hero-context span { display:inline-flex; gap:6px; align-items:center; }
+.hero-context i { width:6px; height:6px; border-radius:50%; background:#78dcd5; }
+.session-strip { display:grid; grid-template-columns:repeat(4,1fr); margin:0; background:#fff; border-bottom:1px solid var(--color-border); box-shadow:0 10px 20px rgba(17,57,78,.05); }
+.session-stat { padding:16px 19px; border-right:1px solid #e6eef2; }
+.session-stat:last-child { border:0; }
+.session-stat b { display:block; color:#173b51; font-size:12px; }
+.session-stat span { display:flex; align-items:center; gap:6px; margin-top:3px; color:#718497; font-size:10px; }
+.session-stat .live { width:6px; height:6px; border-radius:50%; background:#19a48d; }
+.patient-section { padding:38px 4px 4px; }
+.section-kicker { color:#159089; font-size:10px; font-weight:800; letter-spacing:1.1px; text-transform:uppercase; }
+.section-head { display:flex; justify-content:space-between; align-items:end; gap:16px; margin-bottom:17px; }
+.section-head h2 { margin-top:6px; color:#102a43; font-size:25px; letter-spacing:-.6px; }
+.snapshot-grid { display:grid; grid-template-columns:1.4fr .8fr .8fr; gap:0; border-top:1px solid var(--color-border); border-bottom:1px solid var(--color-border); }
+.snapshot-item { min-height:104px; padding:18px 16px; border-right:1px solid var(--color-border); }
+.snapshot-item:last-child { border:0; }
+.snapshot-item label { display:block; color:#728398; font-size:10px; font-weight:800; letter-spacing:.75px; text-transform:uppercase; }
+.snapshot-item b { display:block; margin-top:9px; color:#173b51; font-size:14px; line-height:1.4; }
+.snapshot-item small { display:block; margin-top:4px; color:#728398; font-size:11px; }
+.medical-timeline { margin-top:5px; padding:5px 0 12px; }
+.medical-timeline .timeline-item { position:relative; gap:16px; padding:16px 0 16px 24px; border-bottom:1px solid #e4edf1; }
+.medical-timeline .timeline-item:last-child { border:0; }
+.medical-timeline .timeline-item::before { content:""; position:absolute; left:5px; top:27px; bottom:-27px; width:1px; background:#c8dce2; }
+.medical-timeline .timeline-item:last-child::before { display:none; }
+.medical-timeline .timeline-dot { position:absolute; left:0; top:20px; width:11px; height:11px; box-shadow:0 0 0 5px #e9f7f6; background:#0f9f9a; }
+.medical-timeline .timeline-item b { font-size:13px !important; color:#173b51; }
+.medical-timeline .timeline-item div div { margin-top:4px; }
+.prep-list { display:grid; gap:2px; }
+.prep-list .patient-step { min-height:72px; padding:12px 0; border:0; border-bottom:1px solid #e4edf1; border-radius:0; background:transparent; }
+.prep-list .patient-step:hover { transform:none; background:#f7fbfc; }
+.prep-list .step-icon { border-radius:50%; }
+.prep-list .patient-step button { background:#eaf6f5; border:0; }
+.session-panel { position:sticky; top:92px; padding:25px 0 0; }
+.session-panel h2 { color:#102a43; font-size:18px; letter-spacing:-.35px; }
+.session-panel > p { margin-top:5px; color:#708396; font-size:11px; }
+.progress-rail { margin:24px 0 25px; padding-left:2px; }
+.progress-node { position:relative; display:flex; align-items:center; gap:11px; min-height:42px; color:#8494a4; font-size:11px; font-weight:700; }
+.progress-node:not(:last-child)::after { content:""; position:absolute; left:7px; top:28px; height:20px; width:1px; background:#ccdce2; }
+.progress-node i { width:15px; height:15px; border:1px solid #bbced7; border-radius:50%; background:#f4f8fb; }
+.progress-node.done { color:#187e72; }.progress-node.done i { background:#149e90; border-color:#149e90; box-shadow:inset 0 0 0 4px #e4f8f6; }.progress-node.current { color:#102a43; }.progress-node.current i { border:4px solid #0f9f9a; background:#e8f8f7; }
+.session-details { padding:16px 0; border-top:1px solid var(--color-border); border-bottom:1px solid var(--color-border); }
+.session-detail { display:flex; justify-content:space-between; gap:12px; padding:8px 0; }
+.session-detail label { color:#8090a0; font-size:10px; font-weight:800; letter-spacing:.7px; }.session-detail b { color:#173b51; font-size:12px; text-align:right; }.session-detail button { min-height:0; color:#0b8c82; font-size:12px; font-weight:800; }
+.session-privacy { margin-top:18px; padding:14px; border-left:2px solid #79cfc9; background:#eaf6f5; color:#4c6e71; font-size:11px; line-height:1.55; }
+.session-panel .patient-logout { margin-top:18px; text-align:left; border:0; background:transparent; padding:0; min-height:28px; }
+.reveal { animation:reveal .5s both; }.reveal-delay { animation:reveal .55s .12s both; }
+@keyframes aiPulse { 70% { box-shadow:0 0 0 7px rgba(124,226,220,0); } 100% { box-shadow:0 0 0 0 rgba(124,226,220,0); } }
+@keyframes reveal { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+@media (max-width:900px) { .patient-workspace { grid-template-columns:1fr; }.session-panel { position:static; display:grid; grid-template-columns:1fr 1fr; gap:20px; padding:22px 0; border-top:1px solid var(--color-border); }.session-panel > p,.session-panel h2 { grid-column:1/-1; }.progress-rail { margin:0; }.session-privacy { margin:0; }.session-panel .patient-logout { margin:0; } }
+@media (max-width:600px) { .intake-hero { padding:30px 23px 24px; border-radius:19px 19px 6px 6px; }.intake-hero h1 { font-size:31px; }.session-strip { grid-template-columns:1fr 1fr; }.session-stat:nth-child(2) { border-right:0; }.session-stat:nth-child(-n+2) { border-bottom:1px solid #e6eef2; }.snapshot-grid { grid-template-columns:1fr; }.snapshot-item { min-height:0; border-right:0; border-bottom:1px solid var(--color-border); }.snapshot-item:last-child { border-bottom:0; }.session-panel { grid-template-columns:1fr; gap:14px; }.hero-context { display:grid; grid-template-columns:1fr 1fr; }.clinical-cta { width:100%; justify-content:space-between; } }
+@media (prefers-reduced-motion: reduce) { .ai-pulse,.reveal,.reveal-delay { animation:none; } }
+/* Keep the doctor workspace legible on laptop screens; icon-only navigation is tablet-only. */
+@media (min-width:820px) and (max-width:1100px) {
+  :root { --sidebar-w:258px; }
+  .sidebar-header { padding:24px 20px 20px; }
+  .sidebar-logo > div:last-child, .sidebar-emr-label, .sidebar-doctor-name, .sidebar-doctor-meta, .sidebar-online, .nav-section-label { display:block; }
+  .sidebar-doctor { justify-content:flex-start; }
+  .nav-item { justify-content:flex-start; padding:10px 12px; }
+  .nav-item span:not(.nav-badge):not(.nav-badge-teal), .sidebar-footer .signout-btn span { display:inline; }
+  .nav-badge, .nav-badge-teal { position:static; top:auto; right:auto; }
+  .signout-btn { justify-content:flex-start; }
+}
 </style>
 </head>
 <body>
@@ -1292,16 +1600,15 @@ img { max-width: 100%; }
   <div class="login-container">
     <div class="login-brand">
       <div class="brand-logo"><div class="logo-icon">M</div> MediKiosk</div>
-      <h1>Care starts<br>with better<br>information.</h1>
-      <p>A secure pre-consultation platform that helps patients share their health history and helps clinicians review organized information before the consultation.</p>
+      <h1>Prepare the patient<br>before the<br>consultation.</h1>
+      <p>AI-assisted clinical intake collects patient history, digitizes medical records, and prepares a structured summary for physician review.</p>
       <div class="brand-feature">
-        <div>✓ Guided clinical history collection</div>
-        <div>✓ Previous record organization &amp; OCR</div>
-        <div>✓ AI-assisted clinical summary</div>
-        <div>✓ AYUSH history integration</div>
-        <div>✓ Clinician review before use</div>
+        <div>✓ Patient identification and consent</div>
+        <div>✓ Conversational AI clinical intake</div>
+        <div>✓ Medical document extraction</div>
+        <div>✓ Physician-ready pre-consultation summary</div>
+        <div>✓ Source transparency and verification</div>
         <div>✓ Consent-based patient access</div>
-        <div>✓ ABHA / FHIR / HIS ready</div>
       </div>
     </div>
     <div class="login-form">
@@ -1319,7 +1626,7 @@ img { max-width: 100%; }
           <div class="input-group"><label for="doctorId">Doctor ID</label><input type="text" id="doctorId" placeholder="e.g. DOC-1001" autocomplete="username"></div>
           <div class="input-group"><label for="password">Password</label><input type="password" id="password" placeholder="Enter password" autocomplete="current-password"></div>
           <button class="primary-btn" id="doctorLoginSubmitBtn" onclick="sendOTP()">Continue with Secure Login</button>
-          <div class="security-note">🔒 Two-factor authentication enabled. A 6-digit verification code will be dispatched to your registered contact.</div>
+          <div class="security-note">🔒 Demo authentication is isolated from live accounts. In prototype mode, no email or SMS is sent; the server reports delivery status explicitly.</div>
         </div>
         <div id="doctorMethodStep" style="display:none">
           <p class="login-subtitle" style="margin-bottom:12px; font-weight:600; color:var(--navy);">Choose verification channel:</p>
@@ -1387,11 +1694,20 @@ img { max-width: 100%; }
     </div>
   </header>
   <main class="patient-main">
-    <section class="welcome-card">
+   <nav class="patient-nav" aria-label="Patient navigation">
+     <button onclick="window.scrollTo({top:0,behavior:'smooth'});this.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('active'));this.classList.add('active')">Dashboard</button>
+     <button class="active" onclick="scrollToPatientSection('patientClinicalIntake', this)">Clinical Intake</button>
+     <button onclick="scrollToPatientSection('patientRecordsSection', this)">Medical Records</button>
+     <button onclick="scrollToPatientSection('patientMedicationsSection', this)">Current Medications</button>
+     <button onclick="scrollToPatientSection('patientTimelineSection', this)">Medical Timeline</button>
+     <button onclick="openPatientAppointmentsModal()">Appointments</button>
+     <button onclick="openPatientConsentModal()">Profile &amp; Consent</button>
+   </nav>
+   <section class="welcome-card">
       <div>
         <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#a9ddd7;font-weight:800;margin-bottom:7px;">Your consultation preparation</div>
-        <h1 id="patientWelcomeTitle">Let's prepare your visit.</h1>
-        <p id="patientWelcomeSubtitle">Complete a short health history and add previous records. Your doctor will review the organized information before your consultation.</p>
+        <h1 id="patientWelcomeTitle">Let's prepare your consultation.</h1>
+        <p id="patientWelcomeSubtitle">Complete your clinical intake and add previous records. Your doctor will review the organized information before seeing you.</p>
       </div>
       <div class="token-box token-card-interactive" id="patientTokenBox" onclick="openPatientTokenModal()" title="Click to view digital token pass & room directions">
         <small>OPD TOKEN</small>
@@ -1400,7 +1716,22 @@ img { max-width: 100%; }
       </div>
     </section>
     <div class="patient-grid">
-      <section class="patient-card">
+      <section class="patient-card" id="patientClinicalIntake">
+        <div class="patient-highlight">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--blue);font-weight:800;">AI-assisted preparation</div>
+          <h2>Clinical Intake</h2>
+          <p>Let's understand your symptoms before your consultation. Your answers are structured for physician review, not diagnosis.</p>
+          <button class="primary-btn" style="margin-top:14px;width:auto;" onclick="openPatientHealthHistoryModal()">Continue intake →</button>
+        </div>
+        <div class="patient-summary-cards">
+          <div class="patient-summary-card" id="patientRecordsSection"><b>Medical Records</b><span id="patientRecordCount">2 documents ready for review</span></div>
+          <div class="patient-summary-card" id="patientMedicationsSection"><b>Current Medications</b><span id="patientMedicationCount">Medication list will be shared with your doctor</span></div>
+          <div class="patient-summary-card" id="patientTimelineSection"><b>Medical Timeline</b><span>Recent activity and uploaded records</span></div>
+        </div>
+        <div class="timeline-card" aria-label="Medical timeline">
+          <div style="display:flex;justify-content:space-between;align-items:center;"><h3 style="font-size:14px;">Medical Timeline</h3><span class="source-status">Live session</span></div>
+          <div id="patientTimelineList" style="margin-top:8px;"></div>
+        </div>
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
           <h2>Your preparation checklist</h2>
           <span class="patient-progress-badge" id="patientProgressBadge">0 / 4 completed</span>
@@ -1515,18 +1846,18 @@ img { max-width: 100%; }
       </button>
       <button class="nav-item" id="nav-opd" onclick="navigate('opd')" title="OPD Queue" aria-label="OPD Queue">
         <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>
-        <span>OPD Queue</span>
+        <span>Patient Queue</span>
         <span class="nav-badge-teal" id="nav-badge-opd">12</span>
       </button>
 
       <div class="nav-section-label">Clinical Workspace</div>
       <button class="nav-item" id="nav-patients" onclick="navigate('patients')" title="Patients" aria-label="Patients">
         <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
-        <span>Patients</span>
+        <span>Patient Profiles</span>
       </button>
       <button class="nav-item" id="nav-summaries" onclick="navigate('summaries')" title="Intake Summaries" aria-label="Intake Summaries">
         <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>
-        <span>Intake Summaries</span>
+        <span>Clinical Intake</span>
         <span class="nav-badge-teal" id="nav-badge-summaries">5</span>
       </button>
       <button class="nav-item" id="nav-records" onclick="navigate('records')" title="Medical Records" aria-label="Medical Records">
@@ -1546,10 +1877,15 @@ img { max-width: 100%; }
       </button>
       <button class="nav-item" id="nav-analytics" onclick="navigate('analytics')" title="Reports &amp; Analytics" aria-label="Reports and Analytics">
         <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>
-        <span>Reports &amp; Analytics</span>
+        <span>Consultations</span>
       </button>
 
       <div class="nav-section-label">System</div>
+      <button class="nav-item" id="nav-admin" onclick="navigate('admin')" title="Hospital Workspace" aria-label="Hospital Workspace" style="display:none;">
+        <span class="nav-icon" aria-hidden="true">⌘</span>
+        <span>Hospital Workspace</span>
+        <span class="demo-label" style="margin-left:auto;">Demo</span>
+      </button>
       <button class="nav-item" id="nav-settings" onclick="navigate('settings')" title="Settings" aria-label="Settings">
         <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
         <span>Settings</span>
@@ -1562,6 +1898,7 @@ img { max-width: 100%; }
       </button>
     </div>
   </aside>
+  <div class="sidebar-resizer" id="sidebarResizer" role="separator" aria-label="Resize sidebar" aria-orientation="vertical" tabindex="0"></div>
 
   <!-- MAIN AREA -->
   <div class="main">
@@ -1617,7 +1954,7 @@ img { max-width: 100%; }
         <div style="overflow-y:auto;flex:1;">
           <div class="notif-item unread" onclick="navigate('alerts');closeNotifPanel()">
             <div style="display:flex;gap:10px;align-items:flex-start;">
-              <div class="notif-icon" style="background:var(--red-light);">🚨</div>
+              <div class="notif-icon" style="background:var(--amber-light);">⚑</div>
               <div>
                 <div class="notif-title">2 patients require attention</div>
                 <div class="notif-body">Rahul Sharma (A-104) and Vikram Malhotra (A-107) have priority clinical alerts.</div>
@@ -1755,7 +2092,7 @@ img { max-width: 100%; }
         <div class="panel" style="margin-top:20px;">
           <div class="filter-bar">
             <button class="filter-btn active" onclick="filterOPD('all',this)">All <span style="margin-left:3px;background:#E2E8F0;padding:1px 6px;border-radius:50px;font-size:9px;">12</span></button>
-            <button class="filter-btn" onclick="filterOPD('attention',this)">⚠ Attention <span style="margin-left:3px;background:#FEB2B2;color:#C53030;padding:1px 6px;border-radius:50px;font-size:9px;">2</span></button>
+            <button class="filter-btn" onclick="filterOPD('attention',this)">⚠ Attention <span style="margin-left:3px;background:#E0E7FF;color:#4F46E5;padding:1px 6px;border-radius:50px;font-size:9px;">2</span></button>
             <button class="filter-btn" onclick="filterOPD('ready',this)">✓ Ready <span style="margin-left:3px;background:#9AE6B4;color:var(--green);padding:1px 6px;border-radius:50px;font-size:9px;">5</span></button>
             <button class="filter-btn" onclick="filterOPD('waiting',this)">⏳ Waiting <span style="margin-left:3px;background:var(--amber-light);color:var(--amber);padding:1px 6px;border-radius:50px;font-size:9px;">4</span></button>
             <button class="filter-btn" onclick="filterOPD('completed',this)">✅ Completed <span style="margin-left:3px;background:var(--teal-light);color:var(--teal);padding:1px 6px;border-radius:50px;font-size:9px;">1</span></button>
@@ -2011,6 +2348,51 @@ img { max-width: 100%; }
       </div>
 
       <!-- ======================================================
+           HOSPITAL WORKSPACE / ADMIN VIEW
+      ====================================================== -->
+      <div id="view-admin" class="view-container hidden">
+        <div class="page-header-row">
+          <div class="page-header" style="margin-bottom:0;">
+            <div class="page-greeting">Hospital operations</div>
+            <div class="page-title">Hospital Workspace</div>
+            <div class="page-subtitle">A calm operational view of today's MediKiosk activity · <span class="demo-label">Demo data</span></div>
+          </div>
+          <span class="source-status verified">System monitored</span>
+        </div>
+        <div class="admin-grid">
+          <div class="admin-stat"><div class="metric-label">Kiosk Status</div><div class="metric-value" style="color:var(--green);font-size:20px;">Online</div><div class="metric-sub">Kiosk 01 · Last check just now</div><span class="demo-label">Demo status</span></div>
+          <div class="admin-stat"><div class="metric-label">OPD Queue</div><div class="metric-value" id="adminQueueCount" style="color:var(--blue);">12</div><div class="metric-sub">Patients checked in today</div><span class="demo-label">Demo count</span></div>
+          <div class="admin-stat"><div class="metric-label">Daily Intake Count</div><div class="metric-value" id="adminIntakeCount" style="color:var(--teal);">9</div><div class="metric-sub">Clinical intakes captured</div><span class="demo-label">Demo count</span></div>
+          <div class="admin-stat"><div class="metric-label">Records Processed</div><div class="metric-value" id="adminRecordsCount" style="color:#6366f1;">14</div><div class="metric-sub">AI extraction completed</div><span class="demo-label">Demo count</span></div>
+        </div>
+        <div class="admin-layout">
+          <section class="panel">
+            <div class="panel-header"><h3>OPD Queue Overview</h3><span class="panel-meta">Today · General Medicine</span></div>
+            <div class="panel-body admin-list" id="adminQueueList"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><h3>System Status</h3><span class="panel-meta">Hospital workspace</span></div>
+            <div class="panel-body admin-list">
+              <div class="admin-list-row"><i class="system-dot"></i><div style="flex:1;"><b style="font-size:12px;">Clinical Intake API</b><div style="font-size:10px;color:var(--muted);">Available for patient kiosks</div></div><span class="source-status verified">Operational</span></div>
+              <div class="admin-list-row"><i class="system-dot"></i><div style="flex:1;"><b style="font-size:12px;">Document Processing</b><div style="font-size:10px;color:var(--muted);">Extraction service connected</div></div><span class="source-status verified">Operational</span></div>
+              <div class="admin-list-row"><i class="system-dot"></i><div style="flex:1;"><b style="font-size:12px;">Consent &amp; Access</b><div style="font-size:10px;color:var(--muted);">Session controls enabled</div></div><span class="source-status verified">Protected</span></div>
+            </div>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><h3>Doctors</h3><span class="panel-meta">On duty today</span></div>
+            <div class="panel-body admin-list">
+              <div class="admin-list-row"><div class="patient-avatar-sm">RM</div><div style="flex:1;"><b style="font-size:12px;">Dr. Riya Mehta</b><div style="font-size:10px;color:var(--muted);">General Medicine · Room 4</div></div><span class="source-status verified">Online</span></div>
+              <div class="admin-list-row"><div class="patient-avatar-sm">AK</div><div style="flex:1;"><b style="font-size:12px;">Dr. Arjun Kapoor</b><div style="font-size:10px;color:var(--muted);">Internal Medicine · Room 2</div></div><span class="source-status verified">Online</span></div>
+            </div>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><h3>Patients</h3><span class="panel-meta">Registered in today's OPD</span></div>
+            <div class="panel-body admin-list" id="adminPatientList"></div>
+          </section>
+        </div>
+      </div>
+
+      <!-- ======================================================
            SETTINGS VIEW
       ====================================================== -->
       <div id="view-settings" class="view-container hidden">
@@ -2054,7 +2436,6 @@ img { max-width: 100%; }
               <div class="lang-grid" id="langGrid">
                 <button class="lang-btn active" onclick="setLanguage('en',this)"><div class="lang-name">English</div><div class="lang-native">English</div></button>
                 <button class="lang-btn" onclick="setLanguage('hi',this)"><div class="lang-name">Hindi</div><div class="lang-native">हिन्दी</div></button>
-                <button class="lang-btn" onclick="setLanguage('ta',this)"><div class="lang-name">Tamil</div><div class="lang-native">தமிழ்</div></button>
                 <button class="lang-btn" onclick="setLanguage('bn',this)"><div class="lang-name">Bengali</div><div class="lang-native">বাংলা</div></button>
               </div>
               <div style="margin-top:16px;padding:12px;background:var(--teal-light);border-radius:9px;font-size:11px;color:var(--teal-dark);">
@@ -2426,7 +2807,23 @@ function getGreeting() {
 /* ============================================================
    NAVIGATION
 ============================================================ */
-const API_BASE = 'http://localhost:5001/api';
+function getApiBase() {
+  const configured = (window.MEDIKIOSK_API_BASE || '').replace(/\/+$/, '');
+  if (configured) return configured;
+
+  const host = window.location && (window.location.hostname || 'localhost');
+  if (host === 'localhost' || host === '127.0.0.1' || host === '::1') {
+   return 'http://localhost:5000/api';
+  }
+
+  if (window.location && window.location.origin && window.location.origin !== 'null') {
+   return `${window.location.origin}/api`;
+  }
+
+  return 'http://localhost:5000/api';
+}
+
+const API_BASE = getApiBase();
 
 async function syncPatientsFromBackend(renderAfter = true) {
   try {
@@ -2476,7 +2873,7 @@ async function syncPatientsFromBackend(renderAfter = true) {
               dashavidha: 'Not collected'
             },
             history: [
-              { date: 'Today', title: 'Intake Completed in MediKiosk DB', desc: `Synced directly from relational database for ${dbPatient.id}.` }
+              { date: 'Today', title: 'Intake captured in demo backend', desc: `Persisted for this prototype workflow for ${dbPatient.id}.` }
             ],
             investigations: [
               { name: 'Blood Pressure', result: '124/80 mmHg', flag: '' }
@@ -2491,6 +2888,19 @@ async function syncPatientsFromBackend(renderAfter = true) {
             personalHistory: 'Non-smoker',
             ros: 'General: Stable'
           };
+          if (dbPatient.id === 'P-1024' && typeof patientSession !== 'undefined') {
+            const history = patientSession.healthHistory || {};
+            mapped.complaint = history.chiefComplaint || mapped.complaint;
+            mapped.duration = history.duration || mapped.duration;
+            mapped.severity = history.severity || mapped.severity;
+            mapped.conditions = history.conditions || mapped.conditions;
+            mapped.medicines = history.medications ? [history.medications] : mapped.medicines;
+            mapped.allergy = history.allergies || mapped.allergy;
+            mapped.hpi = history.notes || mapped.complaint;
+            mapped.records = (patientSession.records || []).map(record => ({ ...record }));
+            mapped.recordsCount = mapped.records.length;
+            mapped.documents = mapped.records.length;
+          }
 
           if (idx >= 0) {
             demoPatients[idx] = { ...demoPatients[idx], ...mapped };
@@ -2524,7 +2934,7 @@ async function syncPatientsFromBackend(renderAfter = true) {
 }
 
 function navigate(view, patientId) {
-  const views = ['dashboard','opd','patients','summaries','records','alerts','appointments','analytics','settings','patientDetail'];
+  const views = ['dashboard','opd','patients','summaries','records','alerts','appointments','analytics','admin','settings','patientDetail'];
   views.forEach(v => {
     const el = document.getElementById('view-' + v);
     if (el) el.classList.toggle('hidden', v !== view);
@@ -2547,6 +2957,7 @@ function navigate(view, patientId) {
   if (view === 'alerts')        renderAlerts();
   if (view === 'appointments')  renderAppointments('today');
   if (view === 'analytics')     {}
+  if (view === 'admin')         renderAdminWorkspace();
   if (view === 'settings')      {}
   if (view === 'patientDetail' && patientId) openPatient(patientId);
 
@@ -3019,6 +3430,7 @@ function captureAndOCR() {
   if (overlay) overlay.style.display = 'block';
 
   runDemoScanOCR();
+  showToast('Camera capture is unavailable in this prototype. Upload the original document for OCR.', 'warn');
 }
 
 function handleFileScan(e) {
@@ -3049,9 +3461,9 @@ function runDemoScanOCR(customName) {
 
   let step = 0;
   const steps = [
-    { text: '📷 Step 1/3: Document perspective correction & contrast enhancement…', pct: '35%' },
-    { text: '🔍 Step 2/3: Detecting handwritten and printed medical entities…', pct: '70%' },
-    { text: '⚡ Step 3/3: FHIR-compliant clinical schema mapping complete…', pct: '100%' }
+    { text: '📷 Step 1/3: Waiting for a captured document image…', pct: '35%' },
+    { text: '🔍 Step 2/3: OCR can only run on an uploaded image or PDF…', pct: '70%' },
+    { text: '⚠ Step 3/3: No clinical fields will be invented in demo camera mode.', pct: '100%' }
   ];
 
   const interval = setInterval(() => {
@@ -3073,69 +3485,22 @@ function runDemoScanOCR(customName) {
 }
 
 function buildExtractedOCRView(patient, docType, customName) {
-  let docName = '';
-  let icon = '📄';
-  let extracted = [];
-
-  const todayStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-
-  if (docType === 'prescription') {
-    docName = customName || 'Scanned Clinical Prescription';
-    icon = '💊';
-    extracted = [
-      { key: 'Patient Name', val: patient.name },
-      { key: 'Prescription Date', val: todayStr },
-      { key: 'Medication', val: 'Amoxicillin 500mg TDS x 5 days + Paracetamol 650mg SOS' },
-      { key: 'Prescribed By', val: 'Dr. Riya Mehta, MD (Reg #MED-48291)' },
-      { key: 'Instructions', val: 'Take after meals. Adequate hydration.' }
-    ];
-  } else if (docType === 'lab') {
-    docName = customName || 'Scanned Comprehensive Lab Report';
-    icon = '🔬';
-    extracted = [
-      { key: 'Patient Name', val: patient.name },
-      { key: 'Test Name', val: 'Complete Blood Count & Liver Function' },
-      { key: 'Haemoglobin', val: '13.4 g/dL (Normal)' },
-      { key: 'Platelet Count', val: '2.1 Lakh/cumm' },
-      { key: 'Total Bilirubin', val: '0.8 mg/dL' }
-    ];
-  } else if (docType === 'imaging') {
-    docName = customName || 'Scanned Chest X-Ray / ECG Record';
-    icon = '🩻';
-    extracted = [
-      { key: 'Patient Name', val: patient.name },
-      { key: 'Modality', val: 'Chest X-Ray PA View & 12-Lead ECG' },
-      { key: 'Impression', val: 'Normal sinus rhythm, normal cardiothoracic ratio, clear lung fields' },
-      { key: 'Radiologist', val: 'Dr. S. K. Verma, DMRD' }
-    ];
-  } else if (docType === 'discharge') {
-    docName = customName || 'Hospital Discharge Summary';
-    icon = '🏥';
-    extracted = [
-      { key: 'Patient Name', val: patient.name },
-      { key: 'Admission Diagnosis', val: 'Acute Bronchitis — Resolved' },
-      { key: 'Discharge Date', val: todayStr },
-      { key: 'Discharge Advice', val: 'Avoid cold exposure. Review in OPD after 2 weeks.' }
-    ];
-  } else {
-    docName = customName || 'Scanned Medical Record';
-    icon = '📄';
-    extracted = [
-      { key: 'Patient Name', val: patient.name },
-      { key: 'Document Title', val: 'Medical History Certificate' },
-      { key: 'Date', val: todayStr },
-      { key: 'Notes', val: 'Verified during OPD clinical consultation' }
-    ];
-  }
+  const docName = customName || 'Camera capture awaiting upload';
+  const extracted = [
+    { key: 'Processing status', val: 'Camera capture is not available in this prototype.' },
+    { key: 'Next step', val: 'Upload a PDF, JPG, or PNG for OCR, or enter the fields manually.' },
+    { key: 'Verification', val: 'No clinical information was inferred.' }
+  ];
 
   currentScannedData = {
-    patientId: patient.id,
+    patientId: patient && patient.id,
     type: docType,
-    icon: icon,
+    icon: '📄',
     name: docName,
-    date: todayStr,
-    source: 'Scanned via MediKiosk Camera',
-    ocr: 'ready',
+    date: 'Not processed',
+    source: 'Camera demo · no image captured',
+    ocr: 'processing',
+    extractionStatus: 'camera_capture_not_available',
     extracted: extracted
   };
 
@@ -3145,7 +3510,7 @@ function buildExtractedOCRView(patient, docType, customName) {
       <div class="extracted-row">
         <span class="extracted-key">${e.key}</span>
         <span class="extracted-val" id="ocr_val_${idx}" contenteditable="true">${e.val}</span>
-        <span class="ocr-tag">OCR Verified</span>
+        <span class="ocr-tag">Manual review</span>
       </div>
     `).join('');
   }
@@ -3263,6 +3628,43 @@ function switchApptTab(tab, btn) {
 ============================================================ */
 async function openPatient(id) {
   let p = demoPatients.find(x => x.id === id);
+  if (!p && id === 'P-1024') {
+    p = {
+      id: patientSession.id,
+      token: patientSession.token,
+      name: patientSession.name,
+      age: patientSession.age,
+      gender: patientSession.gender,
+      blood: patientSession.blood,
+      status: patientSession.status,
+      priority: 'normal',
+      complaint: patientSession.healthHistory.chiefComplaint,
+      duration: patientSession.healthHistory.duration,
+      severity: patientSession.healthHistory.severity,
+      allergy: patientSession.healthHistory.allergies,
+      conditions: patientSession.healthHistory.conditions || [],
+      medicines: [patientSession.healthHistory.medications],
+      recordsCount: patientSession.records.length,
+      summaryStatus: 'ready',
+      documents: patientSession.records.length,
+      alerts: 0,
+      records: patientSession.records.map(record => ({ ...record })),
+      history: [
+        { date: 'Today', title: 'Clinical intake captured', desc: 'Patient-reported history prepared for physician review.' },
+        ...patientSession.records.map(record => ({ date: record.date, title: record.name, desc: record.extracted }))
+      ],
+      investigations: [
+        { name: 'Blood pressure', result: '124/80 mmHg', flag: 'normal' }
+      ],
+      ayush: {
+        prakriti: patientSession.ayushHistory.prakriti,
+        agni: patientSession.ayushHistory.agni,
+        ahara: patientSession.ayushHistory.diet,
+        vihara: patientSession.ayushHistory.sleep,
+        remedies: patientSession.ayushHistory.remedies.join(', ')
+      }
+    };
+  }
 
   // Fetch complete real-time clinical dossier from backend database
   try {
@@ -3281,9 +3683,9 @@ async function openPatient(id) {
           phone: d.patient.phone || (p ? p.phone : ''),
           token: d.session ? d.session.opdToken : (p ? p.token : 'A-104'),
           status: d.session ? d.session.status : (p ? p.status : 'Summary Ready'),
-          complaint: d.healthHistory ? d.healthHistory.chiefComplaint : (p ? p.complaint : 'Consultation Intake'),
-          duration: d.healthHistory ? d.healthHistory.duration : (p ? p.duration : '2-3 days'),
-          severity: d.healthHistory ? d.healthHistory.severity : (p ? p.severity : 'Moderate'),
+          complaint: d.healthHistory && d.healthHistory.chiefComplaint ? d.healthHistory.chiefComplaint : (p ? p.complaint : 'Consultation Intake'),
+          duration: d.healthHistory && (d.healthHistory.duration || d.healthHistory.symptomDuration) ? (d.healthHistory.duration || d.healthHistory.symptomDuration) : (p ? p.duration : '2-3 days'),
+          severity: d.healthHistory && d.healthHistory.severity ? d.healthHistory.severity : (p ? p.severity : 'Moderate'),
           priority: (d.healthHistory && (d.healthHistory.severity === 'Severe' || d.healthHistory.severity === 'High')) ? 'critical' : (p ? p.priority : 'normal'),
           medicines: d.healthHistory && d.healthHistory.currentMedications ? d.healthHistory.currentMedications : (p ? p.medicines : []),
           allergy: d.healthHistory && d.healthHistory.allergies ? (Array.isArray(d.healthHistory.allergies) ? d.healthHistory.allergies.join(', ') : d.healthHistory.allergies) : (p ? p.allergy : 'No known allergies'),
@@ -3500,11 +3902,11 @@ async function openPatient(id) {
 
           <div class="detail-section-title" style="margin-top:16px;">Integration Status</div>
           <div style="font-size:10px;color:var(--muted);margin-bottom:10px;">Integration layer ready for backend/API connection.</div>
-          <div class="integration-row"><div class="integration-icon">🆔</div><div class="integration-name">ABHA Identity</div><span class="badge badge-amber">Demo</span></div>
-          <div class="integration-row"><div class="integration-icon">🔒</div><div class="integration-name">Consent Gateway</div><span class="badge badge-green">Confirmed</span></div>
-          <div class="integration-row"><div class="integration-icon">📄</div><div class="integration-name">FHIR Clinical Summary</div><span class="badge badge-blue">Prepared</span></div>
-          <div class="integration-row"><div class="integration-icon">🏥</div><div class="integration-name">HIS Connection</div><span class="badge badge-amber">Demo</span></div>
-          <button class="btn-sm" style="margin-top:12px;width:100%;display:flex;justify-content:center;" onclick="mockHISPush()">Send to HIS (Demo)</button>
+          <div class="integration-row"><div class="integration-icon">🆔</div><div class="integration-name">ABHA / ABDM identity</div><span class="badge badge-amber">Not connected</span></div>
+          <div class="integration-row"><div class="integration-icon">🔒</div><div class="integration-name">Local consent record</div><span class="badge badge-blue">Demo only</span></div>
+          <div class="integration-row"><div class="integration-icon">📄</div><div class="integration-name">FHIR-shaped local mapping</div><span class="badge badge-blue">Not exported</span></div>
+          <div class="integration-row"><div class="integration-icon">🏥</div><div class="integration-name">HIS connection</div><span class="badge badge-amber">Not connected</span></div>
+          <button class="btn-sm" style="margin-top:12px;width:100%;display:flex;justify-content:center;" onclick="mockHISPush()">View integration boundary</button>
         </div>
 
         <!-- Doctor Notes -->
@@ -3570,8 +3972,7 @@ function markConsultation(id) {
 }
 
 function mockHISPush() {
-  showToast('Preparing FHIR payload…');
-  setTimeout(() => showToast('✅ Integration successful (Demo) — FHIR bundle ready', 'success'), 1800);
+  showToast('Demo only: no FHIR bundle was exported and no HIS/ABDM endpoint was called.', 'warn');
 }
 
 /* ============================================================
@@ -3849,13 +4250,13 @@ function syncHealthHistoryToBackend(p) {
     additionalNotes: p.notes || ''
   };
 
-  fetch(`http://localhost:5001/api/patients/${p.id}/health-history`, {
+  fetch(`${API_BASE}/patients/${p.id}/health-history`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   }).then(res => {
     if (res.status === 404) {
-      return fetch(`http://localhost:5001/api/patients/${p.id}/health-history`, {
+      return fetch(`${API_BASE}/patients/${p.id}/health-history`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -3949,11 +4350,11 @@ function switchSettingsSection(section, btn) {
 const langStrings = {
   en: { greeting: 'Good morning, Dr. Mehta', queue: 'OPD Queue', preview: 'Interface language: English. Medical terms remain in English.' },
   hi: { greeting: 'सुप्रभात, डॉ. मेहता', queue: 'ओपीडी कतार', preview: 'इंटरफ़ेस भाषा: हिन्दी। चिकित्सा शब्द अंग्रेज़ी में रहेंगे।' },
-  ta: { greeting: 'காலை வணக்கம், Dr. Mehta', queue: 'OPD வரிசை', preview: 'இடைமுக மொழி: தமிழ். மருத்துவ சொற்கள் ஆங்கிலத்தில் இருக்கும்.' },
   bn: { greeting: 'শুভ সকাল, ডাঃ মেহতা', queue: 'OPD সারি', preview: 'ইন্টারফেস ভাষা: বাংলা। চিকিৎসা পদগুলি ইংরেজিতে থাকবে।' },
 };
 
 function setLanguage(lang, btn) {
+  if (!langStrings[lang]) return;
   state.language = lang;
   document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
@@ -3964,7 +4365,7 @@ function setLanguage(lang, btn) {
     preview.style.display = 'block';
   }
   document.getElementById('dashGreeting').textContent = langStrings[lang].greeting;
-  showToast(`Language set to ${lang === 'en' ? 'English' : lang === 'hi' ? 'हिन्दी' : lang === 'ta' ? 'தமிழ்' : 'বাংলা'}`, 'success');
+  showToast(`Language set to ${lang === 'en' ? 'English' : lang === 'hi' ? 'हिन्दी' : 'বাংলা'}`, 'success');
 }
 
 /* ============================================================
@@ -3980,7 +4381,7 @@ function updateTopbarDate() {
 /* ============================================================
    AUTHENTICATION & API INTEGRATION
 ============================================================ */
-const API_BASE_URL = 'http://localhost:5001/api';
+const API_BASE_URL = getApiBase();
 let pendingDoctorAuth = null;
 let pendingPatientAuth = null;
 let doctorChallengeToken = null;
@@ -4042,13 +4443,13 @@ function applyPatientProfile(user) {
    PATIENT PORTAL STATE & LOGIC
 ============================================================ */
 let patientSession = {
-  id: 'P-1042',
+  id: 'P-1024',
   token: 'A-104',
-  name: 'Priya Sharma',
+  name: 'Aarav Sharma',
   phone: '7665778969',
-  abhaId: '91-4829-1042-5501',
-  age: 32,
-  gender: 'Female',
+  abhaId: '91-4829-1024-5501',
+  age: 46,
+  gender: 'Male',
   blood: 'O+',
   dept: 'General Medicine',
   room: 'Room 4',
@@ -4057,15 +4458,15 @@ let patientSession = {
   consentConfirmed: true,
   status: 'In preparation',
   healthHistory: {
-    chiefComplaint: 'Intermittent chest tightness and mild fatigue on climbing stairs',
-    duration: '2 - 3 Days',
+    chiefComplaint: 'Chest discomfort for 2 days',
+    duration: '2 Days',
     severity: 'Moderate',
     severityNum: 5,
-    symptoms: ['Chest Discomfort / Tightness', 'Fatigue / Weakness'],
+    symptoms: ['Chest Discomfort / Tightness'],
     conditions: ['Hypertension (High BP)'],
-    medications: 'Telmisartan 40mg (morning)',
-    allergies: 'No Known Drug Allergies',
-    notes: 'No radiating pain to left arm or jaw. Symptoms worsen after heavy meals.',
+    medications: 'Amlodipine 5 mg once daily',
+    allergies: 'No known allergies',
+    notes: 'Patient-reported chest discomfort for two days; physician review required.',
     completed: true
   },
   ayushHistory: {
@@ -4079,8 +4480,9 @@ let patientSession = {
     completed: true
   },
   records: [
-    { id: 'rec-1', name: 'Prescription - Cardiology OPD', type: 'prescription', icon: '💊', date: '14 Jun 2026', source: 'Kiosk OCR Scanned', ocr: 'ready', extracted: 'Telmisartan 40mg OD, Atorvastatin 10mg' },
-    { id: 'rec-2', name: 'Lipid Profile Report', type: 'lab', icon: '🔬', date: '05 Aug 2026', source: 'Patient Upload', ocr: 'ready', extracted: 'Total Cholesterol: 212 mg/dL, Triglycerides: 178 mg/dL' }
+    { id: 'rec-1', name: 'ECG Report', type: 'other', icon: '🩺', date: '18 Aug 2026', source: 'Patient Upload', ocr: 'ready', extracted: 'Uploaded ECG for physician review' },
+    { id: 'rec-2', name: 'Blood Test Report', type: 'lab', icon: '🔬', date: '18 Aug 2026', source: 'Patient Upload', ocr: 'ready', extracted: 'Blood test report uploaded for review' },
+    { id: 'rec-3', name: 'Previous Prescription', type: 'prescription', icon: '💊', date: '10 Aug 2026', source: 'Patient Upload', ocr: 'ready', extracted: 'Amlodipine 5 mg once daily' }
   ],
   summarySubmitted: false
 };
@@ -4123,8 +4525,8 @@ async function sendPatientOTP() {
 
 async function verifyPatientOTP() {
   const otpVal = document.getElementById('patientOtp').value.trim();
-  if (otpVal !== '123456' && otpVal !== '') {
-    showToast('Invalid OTP. Use demo OTP 123456.', 'error'); 
+  if (!/^\d{6}$/.test(otpVal) || otpVal !== '123456') {
+    showToast('Invalid demo OTP. Enter the six-digit code shown for this prototype.', 'error'); 
     return; 
   }
   
@@ -4202,6 +4604,13 @@ function backToPatientLogin() {
   pendingPatientAuth = null;
 }
 
+function scrollToPatientSection(id, button) {
+  const target = document.getElementById(id);
+  if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  document.querySelectorAll('.patient-nav button').forEach(btn => btn.classList.remove('active'));
+  if (button) button.classList.add('active');
+}
+
 function renderPatientDashboard() {
   // Update header & user info
   const nameEl = document.getElementById('patientDisplayName');
@@ -4215,13 +4624,25 @@ function renderPatientDashboard() {
   if (tokenEl) tokenEl.textContent = patientSession.token;
   const deptRoomEl = document.getElementById('patientDeptRoom');
   if (deptRoomEl) deptRoomEl.textContent = `${patientSession.dept} · ${patientSession.room}`;
+  const recordCountEl = document.getElementById('patientRecordCount');
+  if (recordCountEl) {
+    const count = (patientSession.records && patientSession.records.length) || 0;
+    recordCountEl.textContent = `${count} document${count === 1 ? '' : 's'} ready for physician review`;
+  }
+  const medicationCountEl = document.getElementById('patientMedicationCount');
+  if (medicationCountEl) {
+    const medications = patientSession.healthHistory.medications || '';
+    medicationCountEl.textContent = medications && medications !== 'None reported'
+      ? medications
+      : 'No current medications reported';
+  }
 
   // Session info boxes
   const idEl = document.getElementById('patientMetaId');
   if (idEl) idEl.textContent = patientSession.id;
   const langEl = document.getElementById('patientMetaLang');
   if (langEl) {
-    const langNames = { en: 'English', hi: 'हिन्दी', ta: 'தமிழ்', gu: 'ગુજરાતી', bn: 'বাংলা', mr: 'मराठी', te: 'తెలుగు', kn: 'ಕನ್ನಡ' };
+    const langNames = { en: 'English', hi: 'हिन्दी', bn: 'বাংলা' };
     langEl.innerHTML = `${langNames[patientSession.language] || 'English'} <span style="font-size:10px;">▾</span>`;
   }
   const consentEl = document.getElementById('patientMetaConsent');
@@ -4543,7 +4964,29 @@ function savePatientHealthHistory() {
     additionalNotes: notes
   };
 
-  fetch(`http://localhost:5001/api/patients/${patientSession.id}/health-history`, {
+  // The server structures the intake for the physician; the browser never calls Groq directly.
+  fetch(`${API_BASE}/clinical-intake`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).then(res => {
+    if (!res.ok) throw new Error(`Clinical intake request failed: ${res.status}`);
+    return res.json();
+  }).then(summary => {
+    patientSession.aiSummary = summary;
+    patientSession.status = 'Ready for Doctor';
+    renderPatientDashboard();
+    showToast(summary.aiStatus === 'available'
+      ? `AI intake structured by ${summary.provider || 'configured provider'}; physician verification required.`
+      : 'Intake saved without an AI provider; physician verification required.', summary.aiStatus === 'available' ? 'success' : 'warn');
+  }).catch(err => {
+    console.warn('Clinical intake structuring unavailable:', err.message);
+    patientSession.status = 'Intake captured';
+    renderPatientDashboard();
+    showToast('Intake saved. Physician review will continue with captured answers.', 'warn');
+  });
+
+  fetch(`${API_BASE}/patients/${patientSession.id}/health-history`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
@@ -4791,7 +5234,7 @@ function renderPatientRecordsList() {
         <span style="font-size:20px;">${r.icon || '📄'}</span>
         <div>
           <b style="font-size:12.5px;color:var(--navy);display:block;">${r.name}</b>
-          <span style="font-size:10.5px;color:var(--muted);">${r.date} · ${r.source} · <span style="color:var(--teal);font-weight:600;">OCR Ready</span></span>
+          <span style="font-size:10.5px;color:var(--muted);">${r.date} · ${r.source} · <span style="color:${r.ocr === 'ready' ? 'var(--teal)' : 'var(--amber)'};font-weight:600;">${r.ocr === 'ready' ? 'OCR extracted · verify' : 'OCR unavailable · manual review'}</span></span>
           <div style="font-size:10.5px;color:var(--text-sub);margin-top:2px;background:#F1F5F9;padding:2px 6px;border-radius:4px;display:inline-block;">${r.extracted}</div>
         </div>
       </div>
@@ -4803,39 +5246,20 @@ function renderPatientRecordsList() {
 function simulatePatientCaptureOcr() {
   const type = document.getElementById('ph_doc_type').value;
   const customTitle = document.getElementById('ph_doc_title').value.trim();
-
-  const presets = {
-    prescription: {
-      name: customTitle || 'OPD Prescription - General Medicine',
-      icon: '💊',
-      extracted: 'Extracted: Paracetamol 500mg TDS, Cetirizine 10mg HS (Confidence 99%)'
-    },
-    lab: {
-      name: customTitle || 'Blood CBC & Routine Panel',
-      icon: '🔬',
-      extracted: 'Extracted: Hb: 13.2 g/dL, WBC: 7,400/µL, Platelets: 2.3L (Normal)'
-    },
-    discharge: {
-      name: customTitle || 'Hospital Discharge Summary',
-      icon: '🏥',
-      extracted: 'Extracted: Admission diagnosis: Acute Bronchitis, Course: Stabilized'
-    },
-    xray: {
-      name: customTitle || 'Chest X-Ray PA View',
-      icon: '🩻',
-      extracted: 'Extracted: Clear lung fields, Normal cardiothoracic ratio'
-    }
+  const selected = {
+    name: customTitle || 'Document awaiting upload',
+    icon: '📄',
+    extracted: 'Camera OCR is unavailable in this prototype. Upload the original document for OCR or enter fields manually.'
   };
-
-  const selected = presets[type] || presets.prescription;
   const newRec = {
     id: 'rec-' + Date.now(),
     name: selected.name,
     type: type,
     icon: selected.icon,
     date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-    source: 'Kiosk OCR Scanned',
-    ocr: 'ready',
+    source: 'Camera demo · no image captured',
+    ocr: 'processing',
+    extractionStatus: 'camera_capture_not_available',
     extracted: selected.extracted
   };
 
@@ -4858,24 +5282,15 @@ function simulatePatientCaptureOcr() {
   showToast(`Scanned "${newRec.name}" and extracted clinical fields!`, 'success');
 }
 
-function handlePatientFileUpload(e) {
+async function handlePatientFileUpload(e) {
   const file = e.target.files && e.target.files[0];
   if (!file) return;
 
-  const newRec = {
-    id: 'rec-' + Date.now(),
-    name: file.name,
-    type: 'upload',
-    icon: '📄',
-    date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-    source: 'Patient Upload',
-    ocr: 'ready',
-    extracted: `Digitized: ${(file.size / 1024).toFixed(1)} KB file attached`
-  };
-
-  patientSession.records.unshift(newRec);
-
-  // Sync to Backend
+  const formData = new FormData();
+  formData.append('document', file);
+  formData.append('patientId', patientSession.id);
+  formData.append('documentType', 'Medical document');
+  showToast('Analyzing document…', 'info');
   fetch(`${API_BASE}/patients/${patientSession.id}/records`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -4887,9 +5302,38 @@ function handlePatientFileUpload(e) {
     })
   }).catch(e => console.log('File upload sync note:', e));
 
-  document.getElementById('patientAttachedRecordsList').innerHTML = renderPatientRecordsList();
-  renderPatientDashboard();
-  showToast(`Uploaded "${file.name}"!`, 'success');
+  try {
+    const extraction = await fetch(`${API_BASE}/extract-document`, { method: 'POST', body: formData });
+    const extracted = await extraction.json();
+    if (!extraction.ok) throw new Error(extracted.message || 'Document extraction failed');
+    const extractedText = [
+      ...(extracted.medicines || []).map(item => typeof item === 'string' ? item : `${item.name || 'Medicine'} ${item.dose || ''} ${item.frequency || ''}`),
+      ...(extracted.labs || []),
+      ...(extracted.diagnosis || [])
+    ].filter(Boolean).join(', ');
+    const newRec = {
+      id: 'rec-' + Date.now(),
+      name: file.name,
+      type: 'upload',
+      icon: file.type === 'application/pdf' ? '📄' : '🖼️',
+      date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+      source: 'Patient Upload',
+      ocr: ['text_extracted', 'ocr_extracted'].includes(extracted.extractionStatus) ? 'ready' : 'processing',
+      extractionStatus: extracted.extractionStatus,
+      ocrConfidence: extracted.ocrConfidence,
+      extracted: extractedText || 'Document received; manual verification required before clinical use.'
+    };
+    patientSession.records.unshift(newRec);
+    document.getElementById('patientAttachedRecordsList').innerHTML = renderPatientRecordsList();
+    renderPatientDashboard();
+    showToast(!['text_extracted', 'ocr_extracted'].includes(extracted.extractionStatus)
+      ? 'Document uploaded. OCR is unavailable or low confidence; manual review is required.'
+      : `Uploaded "${file.name}" and structured extracted information.`, 'success');
+  } catch (err) {
+    showToast(`Upload failed: ${err.message}. You can retry or continue manually.`, 'warn');
+  } finally {
+    e.target.value = '';
+  }
 }
 
 function removePatientRecord(index) {
@@ -5013,7 +5457,7 @@ function submitPatientSummaryToDoctor() {
         <div style="font-size:12px;color:var(--muted);margin-top:2px;">Attending Physician: <b>${patientSession.doctor}</b></div>
       </div>
       <div style="margin-top:14px;padding:12px;background:#F8FAFC;border:1px solid var(--border);border-radius:10px;font-size:12px;line-height:1.6;">
-        ✅ <b>Your pre-intake file is stored in the database and ready for Dr. Mehta.</b><br>
+        ✅ <b>Your pre-intake file is stored in the configured demo backend and ready for physician review.</b><br>
         • Current Queue Position: <b>Token Active</b><br>
         • Status: <b>Summary Ready in Doctor Dashboard</b><br>
         • Please proceed to <b>1st Floor, Room 4 waiting lobby</b> when your token is called.
@@ -5025,7 +5469,7 @@ function submitPatientSummaryToDoctor() {
     document.getElementById('appModalOverlay').classList.add('open');
   }, 200);
 
-  showToast('Intake summary stored in DB & synced to Doctor Queue!', 'success');
+  showToast('Intake summary stored in the demo backend and visible in the doctor queue.', 'success');
 }
 
 function printPatientTokenSlip() {
@@ -5081,12 +5525,7 @@ function openPatientLanguageModal() {
   const languages = [
     { code: 'en', name: 'English', native: 'English' },
     { code: 'hi', name: 'Hindi', native: 'हिन्दी' },
-    { code: 'ta', name: 'Tamil', native: 'தமிழ்' },
-    { code: 'gu', name: 'Gujarati', native: 'ગુજરાતી' },
-    { code: 'bn', name: 'Bengali', native: 'বাংলা' },
-    { code: 'mr', name: 'Marathi', native: 'मराठी' },
-    { code: 'te', name: 'Telugu', native: 'తెలుగు' },
-    { code: 'kn', name: 'Kannada', native: 'ಕನ್ನಡ' }
+    { code: 'bn', name: 'Bengali', native: 'বাংলা' }
   ];
 
   document.getElementById('appModalTitle').innerHTML = `<span>🌐</span> Select Session Language`;
@@ -5116,6 +5555,7 @@ function openPatientLanguageModal() {
 }
 
 function setPatientSessionLanguage(code, name) {
+  if (!['en', 'hi', 'bn'].includes(code)) return;
   patientSession.language = code;
   closeAppModal();
   renderPatientDashboard();
@@ -5127,25 +5567,25 @@ function setPatientSessionLanguage(code, name) {
 ============================================================ */
 function openPatientConsentModal() {
   const p = patientSession;
-  document.getElementById('appModalTitle').innerHTML = `<span>🔒</span> ABDM Health Data &amp; Consent Management`;
+  document.getElementById('appModalTitle').innerHTML = `<span>🔒</span> Consent &amp; Sharing (Demo)`;
 
   document.getElementById('appModalBody').innerHTML = `
     <div style="font-size:12px;color:var(--text-sub);line-height:1.5;">
-      Under the <b>Ayushman Bharat Digital Mission (ABDM)</b> consent framework, your intake responses and uploaded health records are processed securely.
+      This prototype records your sharing choices locally for the current demo workflow. It does not connect to ABDM, ABHA, FHIR exchange, or a hospital HIS.
     </div>
 
     <div style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;background:white;display:grid;gap:10px;margin-top:6px;">
       <div style="display:flex;align-items:center;justify-content:space-between;">
         <div>
           <b style="font-size:12px;display:block;">Pre-Consultation Clinical Intake Sharing</b>
-          <span style="font-size:10.5px;color:var(--muted);">Allows Dr. Mehta to view symptoms and vitals before your turn.</span>
+          <span style="font-size:10.5px;color:var(--muted);">Allows the assigned demo doctor view symptoms and vitals before your turn.</span>
         </div>
         <input type="checkbox" id="consent_intake" checked style="width:16px;height:16px;accent-color:var(--teal);">
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid #F1F5F9;padding-top:8px;">
         <div>
           <b style="font-size:12px;display:block;">AI Document OCR Processing</b>
-          <span style="font-size:10.5px;color:var(--muted);">Allows AI text extraction from uploaded prescriptions &amp; lab reports.</span>
+          <span style="font-size:10.5px;color:var(--muted);">Allows the configured OCR service to read uploaded prescriptions and lab reports.</span>
         </div>
         <input type="checkbox" id="consent_ocr" checked style="width:16px;height:16px;accent-color:var(--teal);">
       </div>
@@ -5365,7 +5805,7 @@ async function sendOTP() {
     showToast('Credentials verified. Choose an OTP delivery channel.', 'success');
   } catch (err) {
     console.error('Doctor Login Request Error:', err);
-    showToast('Unable to connect to authentication backend on port 5001.', 'error');
+    showToast('Unable to connect to the authentication backend. Check that the server is running.', 'error');
   } finally {
     if (btn) {
       btn.disabled = false;
@@ -5412,7 +5852,9 @@ async function requestOtpDispatch() {
 
     const noticeEl = document.getElementById('otpSentNotice');
     if (noticeEl) {
-      noticeEl.textContent = `A 6-digit verification code has been dispatched to ${data.maskedDestination}. Valid for 5 minutes.`;
+      noticeEl.textContent = data.demoMode
+        ? 'Demo mode: no message was sent. Enter demo OTP 123456. Valid for 5 minutes.'
+        : `A 6-digit verification code has been dispatched to ${data.maskedDestination}. Valid for 5 minutes.`;
     }
 
     const otpInput = document.getElementById('otp');
@@ -5423,7 +5865,9 @@ async function requestOtpDispatch() {
 
     startResendCooldown(data.cooldownSeconds || 45);
 
-    if (data.delivery && data.delivery.status === 'provider_configuration_required') {
+    if (data.demoMode) {
+      showToast('Demo delivery only — no email or SMS was sent. Use OTP 123456.', 'warn');
+    } else if (data.delivery && data.delivery.status === 'provider_configuration_required') {
       showToast(data.delivery.error || 'Provider configuration required: Set credentials in server/.env', 'warn');
     } else {
       showToast(`Code dispatched to ${data.maskedDestination}`, 'success');
@@ -5548,7 +5992,9 @@ async function resendOTP() {
 
     const noticeEl = document.getElementById('otpSentNotice');
     if (noticeEl) {
-      noticeEl.textContent = `A fresh 6-digit code has been dispatched to ${data.maskedDestination}. Valid for 5 minutes.`;
+      noticeEl.textContent = data.demoMode
+        ? 'Demo mode: no message was sent. Enter demo OTP 123456. Valid for 5 minutes.'
+        : `A fresh 6-digit code has been dispatched to ${data.maskedDestination}. Valid for 5 minutes.`;
     }
 
     const otpInput = document.getElementById('otp');
@@ -5557,7 +6003,9 @@ async function resendOTP() {
       otpInput.focus();
     }
 
-    if (data.delivery && data.delivery.status === 'provider_configuration_required') {
+    if (data.demoMode) {
+      showToast('Demo delivery only — no email or SMS was sent. Use OTP 123456.', 'warn');
+    } else if (data.delivery && data.delivery.status === 'provider_configuration_required') {
       showToast(data.delivery.error || 'Provider configuration required: Set credentials in server/.env', 'warn');
     } else {
       showToast(`New code dispatched to ${data.maskedDestination}`, 'success');
@@ -5663,6 +6111,48 @@ document.getElementById('doctorLoginStep').style.display = 'block';
 document.getElementById('doctorMethodStep').style.display = 'none';
 document.getElementById('doctorOtpStep').style.display = 'none';
 
+/* Desktop sidebar resize: keeps the clinical workspace comfortable on wide displays. */
+(function setupSidebarResize() {
+  const resizer = document.getElementById('sidebarResizer');
+  if (!resizer) return;
+  const savedWidth = Number(localStorage.getItem('medikiosk_sidebar_width'));
+  const minWidth = 220;
+  const preferredMax = 380;
+  const canResize = () => window.innerWidth >= 820;
+  const setWidth = (width, persist = false) => {
+    if (!canResize()) return;
+    const maxWidth = Math.max(minWidth, Math.min(preferredMax, window.innerWidth - 520));
+    const next = Math.max(minWidth, Math.min(maxWidth, Math.round(width)));
+    document.documentElement.style.setProperty('--sidebar-w', `${next}px`);
+    resizer.setAttribute('aria-valuemin', String(minWidth));
+    resizer.setAttribute('aria-valuemax', String(maxWidth));
+    resizer.setAttribute('aria-valuenow', String(next));
+    if (persist) localStorage.setItem('medikiosk_sidebar_width', String(next));
+  };
+  if (savedWidth && canResize()) setWidth(savedWidth);
+  let active = false;
+  const finish = () => { if (!active) return; active = false; document.body.classList.remove('sidebar-resizing'); };
+  resizer.addEventListener('pointerdown', event => {
+    if (!canResize()) return;
+    active = true;
+    resizer.setPointerCapture(event.pointerId);
+    document.body.classList.add('sidebar-resizing');
+    event.preventDefault();
+  });
+  resizer.addEventListener('pointermove', event => { if (active) setWidth(event.clientX, true); });
+  resizer.addEventListener('pointerup', finish);
+  resizer.addEventListener('pointercancel', finish);
+  resizer.addEventListener('keydown', event => {
+    if (!canResize()) return;
+    const current = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-w'), 10) || 258;
+    if (event.key === 'ArrowLeft') { setWidth(current - 16, true); event.preventDefault(); }
+    if (event.key === 'ArrowRight') { setWidth(current + 16, true); event.preventDefault(); }
+    if (event.key === 'Home') { setWidth(minWidth, true); event.preventDefault(); }
+    if (event.key === 'End') { setWidth(preferredMax, true); event.preventDefault(); }
+  });
+  window.addEventListener('resize', () => { if (canResize()) setWidth(parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-w'), 10) || 258); });
+})();
+
 // Keyboard shortcuts
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
@@ -5672,6 +6162,299 @@ document.addEventListener('keydown', e => {
     closeNotifPanel();
   }
 });
+
+/* ============================================================
+   PHASE 2: CONVERSATIONAL INTAKE + REAL AI DOCUMENT PIPELINE
+============================================================ */
+function setAdminWorkspaceAccess() {
+  const adminNav = document.getElementById('nav-admin');
+  const isAdmin = state.currentUser && state.currentUser.role === 'admin';
+  if (adminNav) adminNav.style.display = isAdmin ? 'flex' : 'none';
+  if (!isAdmin && state.currentView === 'admin') navigate('dashboard');
+}
+
+function renderAdminWorkspace() {
+  setAdminWorkspaceAccess();
+  const queue = document.getElementById('adminQueueList');
+  const patients = document.getElementById('adminPatientList');
+  const list = (typeof demoPatients !== 'undefined' ? demoPatients : []).slice(0, 5);
+  if (queue) queue.innerHTML = list.length ? list.map(p => `<div class="admin-list-row"><div class="patient-avatar-sm">${getInitials(p.name)}</div><div style="flex:1;"><b style="font-size:12px;">${p.name}</b><div style="font-size:10px;color:var(--muted);">${p.age} years · ${(p.complaint || 'Clinical intake').substring(0,42)}</div></div>${getStatusBadge(p.status || 'Waiting')}</div>`).join('') : '<div class="empty-state" style="padding:20px;">No queue data available.</div>';
+  if (patients) patients.innerHTML = list.slice(0, 4).map(p => `<div class="admin-list-row"><div style="flex:1;"><b style="font-size:12px;">${p.name}</b><div style="font-size:10px;color:var(--muted);">${p.id} · ${p.recordsCount || 0} records</div></div><span class="source-status">Patient profile</span></div>`).join('');
+  const q = document.getElementById('adminQueueCount');
+  const i = document.getElementById('adminIntakeCount');
+  const r = document.getElementById('adminRecordsCount');
+  if (q) q.textContent = typeof demoPatients !== 'undefined' ? demoPatients.length : 12;
+  if (i) i.textContent = typeof demoPatients !== 'undefined' ? demoPatients.filter(p => p.summaryStatus === 'ready' || p.status === 'Summary Ready' || p.status === 'Intake Complete').length : 9;
+  if (r) r.textContent = typeof demoPatients !== 'undefined' ? demoPatients.reduce((n,p) => n + (p.recordsCount || 0), 0) || 14 : 14;
+}
+
+const _initAppWithAdmin = initApp;
+initApp = function() {
+  _initAppWithAdmin();
+  setAdminWorkspaceAccess();
+};
+
+let intakeTranscript = [];
+let intakeRecognition = null;
+let intakeQuestionIndex = 0;
+
+function renderPatientTimeline() {
+  const el = document.getElementById('patientTimelineList');
+  if (!el) return;
+  const events = [
+    ...(patientSession.records || []).map(r => ({ date:r.date || 'Today', title:r.name, detail:'Medical record · ' + (r.source || 'Patient uploaded') })),
+    patientSession.healthHistory && patientSession.healthHistory.completed ? { date:'Today', title:'Clinical intake captured', detail:'Patient reported · Ready for physician review' } : null,
+    patientSession.summarySubmitted ? { date:'Today', title:'Pre-consultation summary submitted', detail:'Shared with assigned doctor' } : null
+  ].filter(Boolean);
+  el.innerHTML = events.length ? events.map(e => `<div class="timeline-item"><i class="timeline-dot"></i><div><b style="font-size:12px;">${e.title}</b><div style="font-size:10px;color:var(--muted);">${e.date} · ${e.detail}</div></div></div>`).join('') : '<div style="font-size:11px;color:var(--muted);padding:10px 0;">Your intake and records will appear here as you add them.</div>';
+}
+
+const _renderPatientDashboard = renderPatientDashboard;
+renderPatientDashboard = function() {
+  _renderPatientDashboard();
+  renderPatientTimeline();
+};
+
+function setIntakeQuestion(text, progress) {
+  const q = document.getElementById('intakeQuestion');
+  const p = document.getElementById('intakeProgressFill');
+  const pct = Math.min(96, progress || (intakeQuestionIndex * 18));
+  if (q) q.textContent = text;
+  if (p) p.style.width = `${pct}%`;
+  const label = document.getElementById('intakeProgressLabel');
+  if (label) label.textContent = `${pct}% complete · conversational intake`;
+}
+
+function getPatientLanguageText() {
+  const language = patientSession?.language || 'en';
+  return {
+    en: {
+      firstQuestion: 'What brings you to the hospital today?',
+      followUp: 'Would you like to add anything else about your current concern?',
+      placeholder: 'Type your answer in your own words…',
+      voice: '🎙 Speak your answer',
+      continue: 'Continue →',
+      hint: 'Voice is optional. Your answer is sent securely to the clinical intake service.',
+      title: 'AI Clinical Intake',
+      save: 'Save for later',
+      finish: 'Finish & prepare summary',
+      empty: 'Please type or speak an answer first.',
+      unavailable: 'AI service unavailable — continue manually.'
+    },
+    hi: {
+      firstQuestion: 'आज आपको अस्पताल आने का कारण क्या है?',
+      followUp: 'क्या आप अपनी वर्तमान समस्या के बारे में कुछ और बताना चाहेंगे?',
+      placeholder: 'अपने शब्दों में अपना उत्तर लिखें…',
+      voice: '🎙 अपना उत्तर बोलें',
+      continue: 'आगे बढ़ें →',
+      hint: 'आवाज़ से उत्तर देना वैकल्पिक है। आपका उत्तर सुरक्षित रूप से क्लिनिकल सेवा को भेजा जाएगा।',
+      title: 'एआई स्वास्थ्य जानकारी',
+      save: 'बाद में जारी रखें',
+      finish: 'पूरा करें और सारांश तैयार करें',
+      empty: 'कृपया पहले अपना उत्तर लिखें या बोलें।',
+      unavailable: 'एआई सेवा उपलब्ध नहीं है — आप मैन्युअल रूप से जारी रख सकते हैं।'
+    },
+    bn: {
+      firstQuestion: 'আজ আপনাকে হাসপাতালে আসতে হচ্ছে কেন?',
+      followUp: 'আপনার বর্তমান সমস্যা সম্পর্কে আর কিছু বলতে চান?',
+      placeholder: 'নিজের ভাষায় আপনার উত্তর লিখুন…',
+      voice: '🎙 আপনার উত্তর বলুন',
+      continue: 'এগিয়ে যান →',
+      hint: 'কণ্ঠে উত্তর দেওয়া ঐচ্ছিক। আপনার উত্তর নিরাপদে ক্লিনিক্যাল পরিষেবায় পাঠানো হবে।',
+      title: 'এআই ক্লিনিক্যাল ইনটেক',
+      save: 'পরে সংরক্ষণ করুন',
+      finish: 'শেষ করুন ও সারাংশ প্রস্তুত করুন',
+      empty: 'অনুগ্রহ করে আগে উত্তর লিখুন বা বলুন।',
+      unavailable: 'এআই পরিষেবা বর্তমানে উপলব্ধ নয় — ম্যানুয়ালি চালিয়ে যান।'
+    }
+  }[language] || null;
+}
+
+function openPatientHealthHistoryModal() {
+  const hh = patientSession.healthHistory || {};
+  const languageText = getPatientLanguageText();
+  intakeTranscript = hh.transcript || [];
+  intakeQuestionIndex = intakeTranscript.length;
+  document.getElementById('appModalTitle').innerHTML = `<span>🩺</span> ${languageText.title}`;
+  document.getElementById('appModalBody').innerHTML = `
+    <div class="intake-conversation">
+      <div style="font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--teal);font-weight:800;">Clinical intake · one question at a time</div>
+      <div id="intakeQuestion" class="intake-question">${hh.chiefComplaint ? languageText.followUp : languageText.firstQuestion}</div>
+      <div class="intake-progress"><i id="intakeProgressFill" style="width:${Math.min(96,intakeQuestionIndex*18)}%"></i></div>
+      <div id="intakeProgressLabel" style="font-size:10px;color:var(--muted);margin:6px 0 12px;">${Math.min(96,intakeQuestionIndex*18)}% complete · conversational intake</div>
+      <div id="intakeTranscript" style="display:grid;gap:7px;max-height:170px;overflow:auto;"></div>
+      <textarea id="intakeAnswer" class="modal-textarea" style="min-height:78px;" placeholder="${languageText.placeholder}" aria-label="Your answer"></textarea>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+        <button class="btn-sm voice-btn" id="intakeVoiceBtn" onclick="startIntakeVoice()">${languageText.voice}</button>
+        <button class="btn-sm btn-primary" id="intakeSendBtn" onclick="submitConversationalAnswer()">${languageText.continue}</button>
+      </div>
+      <div id="intakeVoiceHint" style="font-size:10px;color:var(--muted);margin-top:7px;">${languageText.hint}</div>
+    </div>`;
+  document.getElementById('appModalFooter').innerHTML = `
+    <button class="btn-sm" onclick="closeAppModal()">${languageText.save}</button>
+    <button class="btn-sm btn-primary" onclick="finishConversationalIntake()">${languageText.finish}</button>`;
+  document.getElementById('appModalOverlay').classList.add('open');
+  renderIntakeTranscript();
+}
+
+function renderIntakeTranscript() {
+  const el = document.getElementById('intakeTranscript');
+  if (el) el.innerHTML = intakeTranscript.map(x => `<div class="intake-bubble ${x.role === 'ai' ? 'ai' : ''}"><b>${x.role === 'ai' ? 'MediKiosk AI' : 'You'}</b><br>${x.text}</div>`).join('');
+  if (el) el.scrollTop = el.scrollHeight;
+}
+
+async function submitConversationalAnswer() {
+  const input = document.getElementById('intakeAnswer');
+  const answer = input && input.value.trim();
+  if (!answer) { showToast(getPatientLanguageText().empty, 'warn'); return; }
+  const send = document.getElementById('intakeSendBtn');
+  if (send) { send.disabled = true; send.textContent = 'Structuring…'; }
+  intakeTranscript.push({ role:'patient', text:answer });
+  try {
+    const res = await fetch(`${API_BASE}/clinical-intake`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+      patientId: patientSession.id, chiefComplaint: answer, transcript: intakeTranscript,
+      symptomDuration: patientSession.healthHistory.duration || '', currentMedications: [], allergies: [], pastMedicalHistory: []
+    })});
+    const result = await res.json();
+    const complaint = result.chiefComplaint || answer;
+    patientSession.aiSummary = result;
+    const structuredMedications = Array.isArray(result.medications) ? result.medications.join(', ') : (result.medications || '');
+    const structuredAllergies = Array.isArray(result.allergies) ? result.allergies.join(', ') : (result.allergies || '');
+    patientSession.healthHistory = {
+      ...patientSession.healthHistory,
+      chiefComplaint: complaint,
+      symptoms: Array.isArray(result.symptoms) && result.symptoms.length ? result.symptoms : (patientSession.healthHistory.symptoms || [complaint]),
+      medications: structuredMedications || patientSession.healthHistory.medications || 'None reported',
+      allergies: structuredAllergies || patientSession.healthHistory.allergies || 'No known allergies',
+      notes: result.historyOfPresentIllness || patientSession.healthHistory.notes || '',
+      transcript: intakeTranscript,
+      completed: false
+    };
+    intakeTranscript.push({ role:'ai', text: result.historyOfPresentIllness || result.importantInformation?.[0] || 'Thank you. Please share any other detail that feels important.' });
+    intakeQuestionIndex++;
+    const next = result.questions?.[0] || (result.missingInformation?.[0] ? `Please tell me about ${result.missingInformation[0]}.` : 'What else should your doctor know before the consultation?');
+    setIntakeQuestion(next, intakeQuestionIndex * 18);
+    input.value = '';
+    renderIntakeTranscript();
+  } catch (err) {
+    intakeTranscript.push({ role:'ai', text:'The AI service is temporarily unavailable. You can continue manually and your answer will still be saved.' });
+    renderIntakeTranscript();
+    showToast(getPatientLanguageText().unavailable, 'warn');
+  } finally {
+    if (send) { send.disabled = false; send.textContent = getPatientLanguageText().continue; }
+  }
+}
+
+function startIntakeVoice() {
+  const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const btn = document.getElementById('intakeVoiceBtn');
+  const input = document.getElementById('intakeAnswer');
+  if (!Speech) { if (input) input.focus(); showToast('Voice is not available here. Text input is ready.', 'info'); return; }
+  if (intakeRecognition) intakeRecognition.stop();
+  intakeRecognition = new Speech();
+  intakeRecognition.lang = patientSession.language === 'hi' ? 'hi-IN' : patientSession.language === 'bn' ? 'bn-IN' : 'en-IN';
+  intakeRecognition.interimResults = false;
+  if (btn) { btn.classList.add('listening'); btn.textContent = '🎙 Listening…'; }
+  intakeRecognition.onresult = e => { if (input) input.value = e.results[0][0].transcript; if (btn) btn.textContent = '✓ Is this correct?'; };
+  intakeRecognition.onerror = () => { if (btn) btn.textContent = getPatientLanguageText().voice; showToast('Voice capture failed. Please type instead.', 'warn'); };
+  intakeRecognition.onend = () => { if (btn) btn.classList.remove('listening'); };
+  intakeRecognition.start();
+}
+
+async function finishConversationalIntake() {
+  const input = document.getElementById('intakeAnswer');
+  if (input && input.value.trim()) await submitConversationalAnswer();
+  const hh = patientSession.healthHistory || {};
+  if (!hh.chiefComplaint && !intakeTranscript.length) { showToast('Please answer at least one intake question.', 'warn'); return; }
+  patientSession.healthHistory = { ...hh, chiefComplaint:hh.chiefComplaint || intakeTranscript.find(x=>x.role==='patient')?.text || 'Clinical concern recorded', transcript:intakeTranscript, completed:true, severity:hh.severity || 'Moderate', severityNum:hh.severityNum || 5, medications:hh.medications || 'None reported', allergies:hh.allergies || 'No known allergies' };
+  try {
+    const res = await fetch(`${API_BASE}/summarize-record`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ recordType:'clinical intake', patientId:patientSession.id, transcript:intakeTranscript, healthHistory:patientSession.healthHistory, records:patientSession.records || [] })});
+    patientSession.aiSummary = await res.json();
+  } catch (e) { console.warn('Summary unavailable'); }
+  closeAppModal(); renderPatientDashboard(); showToast(patientSession.aiSummary && patientSession.aiSummary.aiStatus === 'available'
+    ? 'Clinical intake structured by the configured AI provider; physician review required.'
+    : 'Clinical intake saved without an AI provider; physician review required.', patientSession.aiSummary && patientSession.aiSummary.aiStatus === 'available' ? 'success' : 'warn');
+}
+
+async function handleFileScan(e) {
+  if (!e.target.files || !e.target.files.length) return;
+  const file = e.target.files[0];
+  const type = document.getElementById('scan_type_select')?.value || 'medical document';
+  showToast('Analyzing medical record…', 'info');
+  try {
+    const formData = new FormData();
+    formData.append('document', file);
+    formData.append('documentType', type);
+    formData.append('patientId', patientSession?.id || 'demo');
+    const res = await fetch(`${API_BASE}/extract-document`, { method:'POST', body:formData });
+    if (!res.ok) throw new Error(`Document extraction failed (${res.status})`);
+    const extracted = await res.json();
+    const extractedKeys = ['patientName','documentDate','documentType','diagnoses','medications','allergies','investigations','procedures','symptoms','importantInformation','extractionStatus','requiresVerification'];
+    currentScannedData = { patientId:patientSession?.id || 'P-1001', type, icon:'📄', name:file.name, date:extracted.documentDate || new Date().toLocaleDateString('en-IN'), source:'Uploaded document', previewUrl:URL.createObjectURL(file), sourceText:extracted.sourceText || '', structuredData:extracted, ocr:['text_extracted','ocr_extracted'].includes(extracted.extractionStatus) ? 'ready' : 'processing', extracted:Object.entries(extracted).filter(([k])=>extractedKeys.includes(k)).map(([key,val])=>({key,val:Array.isArray(val)?val.map(item=>typeof item === 'object' ? JSON.stringify(item) : item).join(', '):typeof val === 'object' ? JSON.stringify(val) : String(val)})) };
+    if (!currentScannedData.extracted.length) currentScannedData.extracted=[{key:'Verification status',val:extracted.verificationStatus || 'Not verified · manual review required'}];
+    const extractedRows = currentScannedData.extracted;
+    buildExtractedOCRView(demoPatients.find(p=>p.id===currentScannedData.patientId)||demoPatients[0], type, file.name);
+    currentScannedData.extracted = extractedRows;
+    const fields = document.getElementById('ocrExtractedFields');
+    if (fields) fields.innerHTML = extractedRows.map((row, i) => `<div class="extracted-row"><span class="extracted-key">${row.key}</span><span class="extracted-val" id="ocr_val_${i}" contenteditable="true">${row.val}</span><span class="ocr-tag">AI Extracted · Verify</span></div>`).join('');
+    const result = document.getElementById('ocrResultBox'); if (result) result.style.display='block';
+    const processing = document.getElementById('ocrProcessingBox'); if (processing) processing.style.display='none';
+    const save = document.getElementById('saveScanRecordBtn'); if (save) save.disabled=false;
+    const footer = document.getElementById('appModalFooter');
+    if (footer && currentScannedData.previewUrl && !document.getElementById('openOriginalDocumentBtn')) {
+      footer.insertAdjacentHTML('afterbegin', `<a id="openOriginalDocumentBtn" class="btn-sm" href="${currentScannedData.previewUrl}" target="_blank" rel="noopener">Open original document</a>`);
+    }
+  } catch (err) { showToast(`Document processing failed: ${err.message}. Retry or continue manually.`, 'warn'); }
+}
+
+const _saveScannedRecordToPatient = saveScannedRecordToPatient;
+saveScannedRecordToPatient = function() {
+  const record = currentScannedData ? { ...currentScannedData } : null;
+  _saveScannedRecordToPatient();
+  if (record && patientSession && patientSession.id) {
+    fetch(`${API_BASE}/patients/${patientSession.id}/records`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ fileName:record.name, recordType:record.type, source:record.source, extracted:record.extracted, extractedText:record.sourceText, structuredData:record.structuredData, verificationStatus:'Not verified · manual review required' })
+    }).catch(() => {});
+    renderPatientDashboard();
+  }
+};
+
+function openPatientAppointmentsModal() {
+  document.getElementById('appModalTitle').innerHTML='<span>📅</span> Upcoming Appointment';
+  document.getElementById('appModalBody').innerHTML='<div class="timeline-card" style="margin:0;"><b>General Medicine OPD</b><p style="margin-top:6px;color:var(--muted);font-size:12px;">Today · 3:30 PM · Room 4</p><span class="source-status verified">Confirmed</span></div>';
+  document.getElementById('appModalFooter').innerHTML='<button class="btn-sm btn-primary" onclick="closeAppModal()">Close</button>';
+  document.getElementById('appModalOverlay').classList.add('open');
+}
+
+const _openPatient = openPatient;
+openPatient = async function(id) {
+  await _openPatient(id);
+  const p = state.selectedPatient;
+  const host = document.getElementById('patientDetailContent');
+  if (!host || !p) return;
+  const block = document.createElement('div');
+  block.className = 'detail-card';
+  block.style.marginTop = '16px';
+  block.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;"><div><b style="font-size:13px;">Physician verification</b><div style="font-size:10px;color:var(--muted);margin-top:3px;">Confirm important AI and patient-reported fields before consultation.</div></div><span class="source-status">AI Structured</span></div><div style="display:grid;gap:8px;margin-top:12px;">${[
+    ['Chief complaint', p.complaint || 'Not recorded', 'Patient Reported'],
+    ['Current medications', Array.isArray(p.medicines) ? p.medicines.join(', ') : (p.medicines || 'None reported'), 'Previous record'],
+    ['Allergies', p.allergy || 'No known allergies', 'Patient Reported']
+  ].map((row,i)=>`<div id="verify-row-${i}" style="display:flex;align-items:center;gap:8px;padding:9px;border:1px solid var(--border);border-radius:9px;"><div style="flex:1;"><b style="font-size:11px;">${row[0]}</b><div id="verify-value-${i}" style="font-size:12px;margin-top:2px;">${row[1]}</div><span class="source-status" style="margin-top:4px;">${row[2]}</span></div><button class="btn-sm" onclick="verifyClinicalField(${i})">✓ Verify</button><button class="btn-sm" onclick="editClinicalField(${i})">Edit</button></div>`).join('')}</div>`;
+  host.appendChild(block);
+};
+function verifyClinicalField(index) {
+  const row=document.getElementById(`verify-row-${index}`);
+  if (!row) return;
+  const badge=row.querySelector('.source-status'); if (badge) { badge.textContent='Physician Verified'; badge.classList.add('verified'); }
+  showToast('Field marked physician verified.', 'success');
+}
+function editClinicalField(index) {
+  const value=document.getElementById(`verify-value-${index}`);
+  if (!value) return;
+  value.contentEditable='true'; value.focus(); value.style.outline='2px solid var(--teal)';
+  showToast('Edit the field, then choose Verify.', 'info');
+}
 </script>
 
   <!-- DYNAMIC APP MODAL SYSTEM -->
@@ -5692,4 +6475,3 @@ document.addEventListener('keydown', e => {
 
 </body>
 </html>
-

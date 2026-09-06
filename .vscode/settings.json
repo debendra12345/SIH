@@ -1,0 +1,23 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^git status --short --branch; git remote -v; git branch -a$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^git pull --ff-only origin main; git status --short --branch; git log --oneline --decorate -4$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "npm test": true,
+        "/^cd C:\\\\Users\\\\HP\\\\frontend\\\\SIH\\\\client && python -m http\\.server 3000$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^cd C:\\\\Users\\\\HP\\\\frontend\\\\SIH\\\\server && npm start$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "npm install": true,
+        "npm run build": true
+    }
+}

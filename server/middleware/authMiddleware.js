@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { getJwtSecret } = require('../utils/tokenConfig');
 
 /**
  * Protect routes - Authenticate JWT token from Authorization header
@@ -22,16 +23,19 @@ const protect = async (req, res, next) => {
   }
 
   try {
-    const secret = process.env.JWT_SECRET;
-    if (!secret) {
-      console.error('JWT_SECRET is not defined in environment variables.');
-      return res.status(500).json({
-        success: false,
-        message: 'Server configuration error.',
-      });
-    }
+    const decoded = jwt.verify(token, getJwtSecret());
 
-    const decoded = jwt.verify(token, secret);
+    if (decoded.demo) {
+      req.user = {
+        _id: decoded.id,
+        name: decoded.name || 'Demo Doctor',
+        role: decoded.role || 'doctor',
+        doctorId: decoded.id,
+        isActive: true,
+        demoMode: true
+      };
+      return next();
+    }
 
     const user = await User.findById(decoded.id).select('-password');
 

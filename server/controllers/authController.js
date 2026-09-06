@@ -6,6 +6,42 @@ const AuthChallenge = require('../models/AuthChallenge');
 const { sendDoctorOtpEmail } = require('../services/emailService');
 const { sendDoctorOtpSms } = require('../services/smsService');
 const { maskEmail, maskPhone, generateSecureOtp, hashOtp } = require('../utils/authUtils');
+const { getJwtSecret, isDemoTokenMode } = require('../utils/tokenConfig');
+
+const DEMO_DOCTORS = {
+  'DOC-1001': {
+   name: 'Demo Doctor 1',
+  },
+  'DOC-1002': {
+   name: 'Demo Doctor 2',
+  },
+  'DOC-1003': {
+   name: 'Demo Doctor 3',
+  },
+  'DOC-1004': {
+   name: 'Demo Doctor 4',
+  },
+  'DOC-1005': {
+   name: 'Demo Doctor 5',
+  },
+};
+
+const DEMO_PASSWORD = process.env.DEMO_DOCTOR_PASSWORD || 'demo123';
+const DEMO_OTP = '123456';
+const isDemoAuthMode = () => !process.env.MONGO_URI || mongoose.connection.readyState !== 1;
+
+const getDemoDoctor = (doctorId, password) => {
+  const normalizedId = (doctorId || '').trim();
+  const record = DEMO_DOCTORS[normalizedId];
+  if (!record || DEMO_PASSWORD !== password) return null;
+  return { ...record, doctorId: normalizedId, role: 'doctor' };
+};
+
+const buildDemoToken = (payload = {}) => {
+  return jwt.sign({ ...payload, demo: true }, getJwtSecret(), {
+   expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+  });
+};
 
 /**
  * Generate JSON Web Token
@@ -13,12 +49,7 @@ const { maskEmail, maskPhone, generateSecureOtp, hashOtp } = require('../utils/a
  * @param {string} role - User role
  */
 const generateToken = (id, role) => {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    throw new Error('JWT_SECRET is not configured.');
-  }
-
-  return jwt.sign({ id, role }, secret, {
+  return jwt.sign({ id, role, demo: isDemoTokenMode() }, getJwtSecret(), {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   });
 };
@@ -149,6 +180,45 @@ const loginDoctor = async (req, res) => {
       });
     }
 
+    if (isDemoAuthMode()) {
+      const demoUser = getDemoDoctor(doctorId, password);
+      if (!demoUser) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid Doctor ID or password.',
+        });
+      }
+
+      const challengeToken = `demo:${demoUser.doctorId}:${crypto.randomBytes(16).toString('hex')}`;
+      const methods = [
+        {
+          id: 'email',
+          label: 'Email',
+          destination: 'Demo delivery (not sent)',
+          available: true,
+          provider: 'demo',
+        },
+        {
+          id: 'sms',
+          label: 'Mobile/SMS',
+          destination: 'Demo delivery (not sent)',
+          available: true,
+          provider: 'demo',
+        },
+      ];
+
+      return res.status(200).json({
+        success: true,
+        requiresOtp: true,
+        message: 'Credentials verified. Please choose an OTP delivery method.',
+        challengeToken,
+        doctorName: demoUser.name,
+        doctorId: demoUser.doctorId,
+        methods,
+        demoMode: true,
+      });
+    }
+
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({
         success: false,
@@ -267,6 +337,35 @@ const sendDoctorOtp = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Invalid delivery method. Allowed methods: email, sms.',
+      });
+    }
+
+    if (isDemoAuthMode()) {
+      const demoId = challengeToken.startsWith('demo:') ? challengeToken.split(':')[1] : null;
+      const demoUser = demoId ? DEMO_DOCTORS[demoId] : null;
+      if (!demoUser) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid or expired login challenge. Please sign in again.',
+        });
+      }
+
+      const maskedDestination = 'Demo delivery (not sent)';
+      return res.status(200).json({
+        success: true,
+        message: `A 6-digit verification code has been sent to ${maskedDestination}. Valid for 5 minutes.`,
+        method: normalizedMethod,
+        maskedDestination,
+        expiresInSeconds: 300,
+        cooldownSeconds: 45,
+        demoOtp: DEMO_OTP,
+        demoMode: true,
+        delivery: {
+          provider: 'demo',
+          status: 'demo_only',
+          delivered: false,
+          message: 'No email or SMS was sent. Enter the documented demo OTP.'
+        },
       });
     }
 
@@ -407,6 +506,42 @@ const verifyDoctorOtp = async (req, res) => {
       });
     }
 
+    if (isDemoAuthMode()) {
+      const demoId = challengeToken.startsWith('demo:') ? challengeToken.split(':')[1] : null;
+      const demoUser = demoId ? DEMO_DOCTORS[demoId] : null;
+      if (!demoUser) {
+        return res.status(400).json({
+          success: false,
+          message: 'Session expired or invalid login challenge. Please sign in again.',
+        });
+      }
+
+      if (otp.trim() !== DEMO_OTP) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid verification code. Use the documented demo OTP.',
+        });
+      }
+
+      const token = buildDemoToken({ id: demoId, role: 'doctor', name: demoUser.name });
+      return res.status(200).json({
+        success: true,
+        message: 'Doctor authenticated successfully.',
+        token,
+        user: {
+          _id: demoId,
+          name: demoUser.name,
+          email: demoUser.email,
+          role: 'doctor',
+          doctorId: demoId,
+          mobileNumber: '',
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          demoMode: true,
+        },
+      });
+    }
+
     const challenge = await AuthChallenge.findOne({ challengeToken });
     if (!challenge) {
       return res.status(400).json({
@@ -518,6 +653,37 @@ const resendDoctorOtp = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Challenge token is required.',
+      });
+    }
+
+    if (isDemoAuthMode()) {
+      const demoId = challengeToken.startsWith('demo:') ? challengeToken.split(':')[1] : null;
+      const demoUser = demoId ? DEMO_DOCTORS[demoId] : null;
+      if (!demoUser) {
+        return res.status(400).json({
+          success: false,
+          message: 'Session expired or invalid login challenge. Please sign in again.',
+        });
+      }
+
+      const method = req.body.method || 'email';
+      const normalizedMethod = method.toLowerCase().trim();
+      const maskedDestination = 'Demo delivery (not sent)';
+      return res.status(200).json({
+        success: true,
+        message: `A fresh 6-digit verification code has been sent to ${maskedDestination}. Valid for 5 minutes.`,
+        method: normalizedMethod,
+        maskedDestination,
+        expiresInSeconds: 300,
+        cooldownSeconds: 45,
+        demoOtp: DEMO_OTP,
+        demoMode: true,
+        delivery: {
+          provider: 'demo',
+          status: 'demo_only',
+          delivered: false,
+          message: 'No email or SMS was sent. Enter the documented demo OTP.'
+        },
       });
     }
 
@@ -740,4 +906,3 @@ module.exports = {
   loginPatient,
   getMe,
 };
-
