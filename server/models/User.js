@@ -40,14 +40,39 @@ const userSchema = new mongoose.Schema(
       trim: true,
       sparse: true,
     },
+    age: {
+      type: Number,
+      min: [0, 'Age must be positive'],
+      max: [130, 'Age must be under 130'],
+    },
+    gender: {
+      type: String,
+      enum: {
+        values: ['Male', 'Female', 'Other'],
+        message: '{VALUE} is not a valid gender',
+      },
+      trim: true,
+    },
     abhaId: {
       type: String,
       trim: true,
       sparse: true,
     },
+    currentHealthProblem: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    healthStatus: {
+      type: String,
+      trim: true,
+      default: 'Stable',
+    },
     password: {
       type: String,
-      required: [true, 'Please provide a password'],
+      required: function () {
+        return this.role === 'doctor';
+      },
       minlength: [6, 'Password must be at least 6 characters'],
       select: false,
     },
@@ -76,7 +101,7 @@ const userSchema = new mongoose.Schema(
  * Encrypt password using bcrypt before saving
  */
 userSchema.pre('save', async function () {
-  if (!this.isModified('password')) {
+  if (!this.isModified('password') || !this.password) {
     return;
   }
   const salt = await bcrypt.genSalt(10);

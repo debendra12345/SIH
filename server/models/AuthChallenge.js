@@ -14,11 +14,20 @@ const authChallengeSchema = new mongoose.Schema({
   },
   doctorId: {
     type: String,
-    required: true,
+    required: false,
+  },
+  mobileNumber: {
+    type: String,
+    required: false,
+  },
+  role: {
+    type: String,
+    enum: ['doctor', 'patient'],
+    default: 'doctor',
   },
   selectedMethod: {
     type: String,
-    enum: ['email', 'sms', null],
+    enum: ['email', 'sms', 'sms_demo', 'demo', null],
     default: null,
   },
   otpHash: {

@@ -6,6 +6,9 @@ const {
   sendDoctorOtp,
   verifyDoctorOtp,
   resendDoctorOtp,
+  loginPatientChallenge,
+  verifyPatientOtp,
+  resendPatientOtp,
   loginPatient,
   getMe,
 } = require('../controllers/authController');
@@ -17,6 +20,9 @@ router.post('/doctor/login', loginDoctor);
 router.post('/doctor/send-otp', sendDoctorOtp);
 router.post('/doctor/verify-otp', verifyDoctorOtp);
 router.post('/doctor/resend-otp', resendDoctorOtp);
+router.post('/patient/login-challenge', loginPatientChallenge);
+router.post('/patient/verify-otp', verifyPatientOtp);
+router.post('/patient/resend-otp', resendPatientOtp);
 router.post('/patient/login', loginPatient);
 
 // Private routes (JWT required)

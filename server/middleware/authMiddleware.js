@@ -28,16 +28,48 @@ const protect = async (req, res, next) => {
     if (decoded.demo) {
       req.user = {
         _id: decoded.id,
-        name: decoded.name || 'Demo Doctor',
+        name: decoded.name || (decoded.role === 'patient' ? 'Rahul Sharma' : 'Demo Doctor'),
         role: decoded.role || 'doctor',
-        doctorId: decoded.id,
+        doctorId: decoded.role === 'doctor' ? decoded.id : undefined,
+        currentHealthProblem: decoded.currentHealthProblem || '',
+        healthStatus: decoded.healthStatus || 'Stable',
         isActive: true,
         demoMode: true
       };
       return next();
     }
 
-    const user = await User.findById(decoded.id).select('-password');
+    const mongoose = require('mongoose');
+    let user = null;
+    if (mongoose.connection.readyState === 1 && decoded.id && mongoose.Types.ObjectId.isValid(decoded.id)) {
+      try {
+        user = await User.findById(decoded.id).select('-password');
+      } catch (e) {}
+    }
+
+    if (!user) {
+      try {
+        const { inMemoryPatients } = require('../controllers/authController');
+        const inMem = inMemoryPatients ? [...inMemoryPatients.values()].find(p => p._id === decoded.id || p._id?.toString() === decoded.id?.toString()) : null;
+        if (inMem) {
+          user = inMem;
+        }
+      } catch (e) {}
+    }
+
+    if (!user && decoded.role === 'patient') {
+      user = {
+        _id: decoded.id,
+        name: decoded.name || 'Rahul Sharma',
+        age: decoded.age || 25,
+        gender: decoded.gender || 'Male',
+        mobileNumber: decoded.mobileNumber || '',
+        currentHealthProblem: decoded.currentHealthProblem || '',
+        healthStatus: decoded.healthStatus || 'Stable',
+        role: 'patient',
+        isActive: true,
+      };
+    }
 
     if (!user) {
       return res.status(401).json({

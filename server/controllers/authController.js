@@ -4,36 +4,34 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const AuthChallenge = require('../models/AuthChallenge');
 const { sendDoctorOtpEmail } = require('../services/emailService');
-const { sendDoctorOtpSms } = require('../services/smsService');
+const { sendDoctorOtpSms, sendPatientOtpSms, isSmsConfigured } = require('../services/smsService');
 const { maskEmail, maskPhone, generateSecureOtp, hashOtp } = require('../utils/authUtils');
 const { getJwtSecret, isDemoTokenMode } = require('../utils/tokenConfig');
 
-const DEMO_DOCTORS = {
-  'DOC-1001': {
-   name: 'Demo Doctor 1',
-  },
-  'DOC-1002': {
-   name: 'Demo Doctor 2',
-  },
-  'DOC-1003': {
-   name: 'Demo Doctor 3',
-  },
-  'DOC-1004': {
-   name: 'Demo Doctor 4',
-  },
-  'DOC-1005': {
-   name: 'Demo Doctor 5',
-  },
-};
+const { DOCTORS_DATA } = require('../scripts/seedDoctors');
+
+const DEMO_DOCTORS = {};
+(DOCTORS_DATA || []).forEach(d => {
+  DEMO_DOCTORS[d.doctorId] = {
+    name: d.name,
+    email: d.email,
+    mobileNumber: d.mobileNumber,
+    tempPassword: d.tempPassword,
+  };
+});
 
 const DEMO_PASSWORD = process.env.DEMO_DOCTOR_PASSWORD || 'demo123';
 const DEMO_OTP = '123456';
-const isDemoAuthMode = () => !process.env.MONGO_URI || mongoose.connection.readyState !== 1;
+const isDemoAuthMode = () => !process.env.MONGO_URI;
+
+const inMemoryPatientChallenges = new Map();
+const inMemoryPatients = new Map();
 
 const getDemoDoctor = (doctorId, password) => {
   const normalizedId = (doctorId || '').trim();
   const record = DEMO_DOCTORS[normalizedId];
-  if (!record || DEMO_PASSWORD !== password) return null;
+  if (!record) return null;
+  if (record.tempPassword !== password && DEMO_PASSWORD !== password) return null;
   return { ...record, doctorId: normalizedId, role: 'doctor' };
 };
 
@@ -48,8 +46,8 @@ const buildDemoToken = (payload = {}) => {
  * @param {string} id - User ObjectId
  * @param {string} role - User role
  */
-const generateToken = (id, role) => {
-  return jwt.sign({ id, role, demo: isDemoTokenMode() }, getJwtSecret(), {
+const generateToken = (id, role, extra = {}) => {
+  return jwt.sign({ id, role, ...extra, demo: isDemoTokenMode() }, getJwtSecret(), {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   });
 };
@@ -802,13 +800,399 @@ const resendDoctorOtp = async (req, res) => {
 
 
 /**
- * @desc    Authenticate or identify Patient by Mobile Number or ABHA ID
+ * @desc    Step 1: Patient Login Challenge - Validate details, update/create profile & generate Demo OTP
+ * @route   POST /api/auth/patient/login-challenge
+ * @access  Public
+ */
+const loginPatientChallenge = async (req, res) => {
+  try {
+    const { name, age, gender, mobileNumber, currentHealthProblem } = req.body;
+
+    // 1. Strict Backend Validation
+    if (!name || typeof name !== 'string' || name.trim().length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid patient name (at least 2 characters).',
+      });
+    }
+
+    const trimmedName = name.trim().slice(0, 100);
+
+    const parsedAge = parseInt(age, 10);
+    if (isNaN(parsedAge) || parsedAge < 1 || parsedAge > 120) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid numeric age between 1 and 120.',
+      });
+    }
+
+    const validGenders = ['Male', 'Female', 'Other'];
+    const matchedGender = validGenders.find(
+      g => g.toLowerCase() === (gender || '').toString().trim().toLowerCase()
+    );
+    if (!matchedGender) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please select a valid gender (Male, Female, or Other).',
+      });
+    }
+
+    if (!mobileNumber || typeof mobileNumber !== 'string') {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a registered 10-digit mobile number.',
+      });
+    }
+
+    const cleanedMobile = mobileNumber.replace(/\D/g, '');
+    if (cleanedMobile.length !== 10) {
+      return res.status(400).json({
+        success: false,
+        message: 'Mobile number must be exactly 10 digits (e.g. 9875410323).',
+      });
+    }
+
+    const trimmedProblem = typeof currentHealthProblem === 'string' ? currentHealthProblem.trim().slice(0, 500) : '';
+
+    // 2. Database check & Patient Profile Storage
+    let userId = null;
+    let user = null;
+
+    if (mongoose.connection.readyState === 1) {
+      user = await User.findOne({ role: 'patient', mobileNumber: cleanedMobile });
+      if (user) {
+        user.name = trimmedName;
+        user.age = parsedAge;
+        user.gender = matchedGender;
+        if (trimmedProblem) {
+          user.currentHealthProblem = trimmedProblem;
+        }
+        user.healthStatus = user.healthStatus || 'Stable';
+        user.isActive = true;
+        await user.save();
+      } else {
+        user = await User.create({
+          name: trimmedName,
+          age: parsedAge,
+          gender: matchedGender,
+          mobileNumber: cleanedMobile,
+          currentHealthProblem: trimmedProblem,
+          healthStatus: 'Stable',
+          role: 'patient',
+          isActive: true,
+        });
+      }
+      userId = user._id;
+
+      // Invalidate existing patient challenges
+      await AuthChallenge.deleteMany({ userId: user._id, role: 'patient' });
+    } else {
+      userId = new mongoose.Types.ObjectId();
+    }
+
+    // 3. Generate 6-Digit Demo OTP (Fixed 123456 for SIH presentation demo)
+    const DEMO_PATIENT_OTP = '123456';
+    const rawOtp = DEMO_PATIENT_OTP;
+    const otpHash = hashOtp(rawOtp);
+    const challengeToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+    const cooldownUntil = new Date(Date.now() + 45 * 1000); // 45s cooldown
+
+    // 4. Store Challenge in in-memory map & in MongoDB if connected
+    inMemoryPatientChallenges.set(challengeToken, {
+      challengeToken,
+      userId: userId ? userId.toString() : 'demo_patient_id',
+      mobileNumber: cleanedMobile,
+      otpHash,
+      otpExpiresAt: expiresAt,
+      resendCooldownUntil: cooldownUntil,
+      attempts: 0,
+      maxAttempts: 5,
+      isUsed: false,
+    });
+
+    inMemoryPatients.set(cleanedMobile, {
+      _id: userId ? userId.toString() : 'demo_patient_id',
+      name: trimmedName,
+      age: parsedAge,
+      gender: matchedGender,
+      mobileNumber: cleanedMobile,
+      currentHealthProblem: trimmedProblem,
+      healthStatus: 'Stable',
+      role: 'patient',
+      isActive: true,
+      createdAt: new Date().toISOString(),
+    });
+
+    if (mongoose.connection.readyState === 1) {
+      await AuthChallenge.create({
+        challengeToken,
+        userId,
+        mobileNumber: cleanedMobile,
+        role: 'patient',
+        selectedMethod: 'sms_demo',
+        otpHash,
+        otpExpiresAt: expiresAt,
+        resendCooldownUntil: cooldownUntil,
+        attempts: 0,
+        maxAttempts: 5,
+        isUsed: false,
+      });
+    }
+
+    const maskedMobile = `******${cleanedMobile.slice(-4)}`;
+
+    return res.status(200).json({
+      success: true,
+      demoMode: true,
+      demoOtp: DEMO_PATIENT_OTP,
+      message: 'DEMO MODE: For this presentation demo, use OTP 123456.',
+      challengeToken,
+      maskedDestination: maskedMobile,
+      expiresInSeconds: 300,
+      cooldownSeconds: 45,
+    });
+  } catch (error) {
+    console.error('Patient Login Challenge Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error during patient authentication challenge.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+};
+
+/**
+ * @desc    Step 2: Verify Patient OTP & Issue Authenticated JWT Session
+ * @route   POST /api/auth/patient/verify-otp
+ * @access  Public
+ */
+const verifyPatientOtp = async (req, res) => {
+  try {
+    const { challengeToken, otp } = req.body;
+
+    if (!challengeToken) {
+      return res.status(400).json({
+        success: false,
+        message: 'Authentication session expired or missing challenge token. Please restart login.',
+      });
+    }
+
+    if (!otp || typeof otp !== 'string' || !/^\d{6}$/.test(otp.trim())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please enter a valid 6-digit numeric OTP code.',
+      });
+    }
+
+    const trimmedOtp = otp.trim();
+
+    let challenge = null;
+    if (mongoose.connection.readyState === 1) {
+      challenge = await AuthChallenge.findOne({
+        challengeToken,
+        role: 'patient',
+        isUsed: false,
+      });
+    }
+
+    const memChallenge = inMemoryPatientChallenges.get(challengeToken);
+    if (!challenge && memChallenge) {
+      challenge = memChallenge;
+    }
+
+    if (!challenge) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired authentication challenge. Please request a new code.',
+      });
+    }
+
+    if (challenge.isUsed) {
+      return res.status(400).json({
+        success: false,
+        message: 'This OTP has already been verified and cannot be reused.',
+      });
+    }
+
+    if (challenge.attempts >= challenge.maxAttempts) {
+      return res.status(429).json({
+        success: false,
+        message: 'Maximum verification attempts exceeded for this challenge. Please restart login.',
+      });
+    }
+
+    if (new Date() > challenge.otpExpiresAt) {
+      return res.status(400).json({
+        success: false,
+        message: 'The verification code has expired (5-minute limit). Please request a new code.',
+      });
+    }
+
+    const candidateHash = hashOtp(trimmedOtp);
+    const isFixedDemoMatch = trimmedOtp === '123456';
+    if (candidateHash !== challenge.otpHash && !isFixedDemoMatch) {
+      challenge.attempts = (challenge.attempts || 0) + 1;
+      if (typeof challenge.save === 'function') await challenge.save();
+
+      const remaining = challenge.maxAttempts - challenge.attempts;
+      return res.status(400).json({
+        success: false,
+        message: `Invalid verification code. Use demo OTP 123456. ${remaining > 0 ? `${remaining} attempt(s) remaining.` : 'Maximum attempts exceeded.'}`,
+        attemptsRemaining: Math.max(0, remaining),
+      });
+    }
+
+    // Mark challenge as used
+    challenge.isUsed = true;
+    if (typeof challenge.save === 'function') await challenge.save();
+
+    let user = null;
+    if (mongoose.connection.readyState === 1 && challenge.userId && mongoose.Types.ObjectId.isValid(challenge.userId)) {
+      user = await User.findById(challenge.userId);
+    }
+    if (!user && challenge.mobileNumber) {
+      user = inMemoryPatients.get(challenge.mobileNumber);
+    }
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Patient profile could not be located.',
+      });
+    }
+
+    if (!user.isActive) {
+      return res.status(403).json({
+        success: false,
+        message: 'Patient account is inactive.',
+      });
+    }
+
+    const token = generateToken(user._id, user.role || 'patient', {
+      name: user.name,
+      age: user.age,
+      gender: user.gender,
+      mobileNumber: user.mobileNumber,
+      currentHealthProblem: user.currentHealthProblem || '',
+      healthStatus: user.healthStatus || 'Stable',
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Patient verification successful.',
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        age: user.age,
+        gender: user.gender,
+        mobileNumber: user.mobileNumber,
+        currentHealthProblem: user.currentHealthProblem || '',
+        healthStatus: user.healthStatus || 'Stable',
+        role: user.role || 'patient',
+        isActive: user.isActive,
+        createdAt: user.createdAt,
+      },
+    });
+  } catch (error) {
+    console.error('Patient OTP Verification Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error during OTP verification.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+};
+
+/**
+ * @desc    Resend Patient SMS OTP
+ * @route   POST /api/auth/patient/resend-otp
+ * @access  Public
+ */
+const resendPatientOtp = async (req, res) => {
+  try {
+    const { challengeToken } = req.body;
+
+    if (!challengeToken) {
+      return res.status(400).json({
+        success: false,
+        message: 'Challenge token is required to resend verification code.',
+      });
+    }
+
+    const challenge = await AuthChallenge.findOne({
+      challengeToken,
+      role: 'patient',
+      isUsed: false,
+    });
+
+    if (!challenge) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired session. Please restart login.',
+      });
+    }
+
+    if (challenge.resendCooldownUntil && new Date() < challenge.resendCooldownUntil) {
+      const remainingSeconds = Math.ceil((challenge.resendCooldownUntil - new Date()) / 1000);
+      return res.status(429).json({
+        success: false,
+        message: `Please wait ${remainingSeconds} second(s) before requesting a new code.`,
+        retryAfter: remainingSeconds,
+      });
+    }
+
+    const user = await User.findById(challenge.userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Patient record not found.',
+      });
+    }
+
+    const DEMO_PATIENT_OTP = '123456';
+    const rawOtp = DEMO_PATIENT_OTP;
+    const otpHash = hashOtp(rawOtp);
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+    const cooldownUntil = new Date(Date.now() + 45 * 1000);
+
+    challenge.otpHash = otpHash;
+    challenge.otpExpiresAt = expiresAt;
+    challenge.resendCooldownUntil = cooldownUntil;
+    challenge.attempts = 0;
+    challenge.isUsed = false;
+    await challenge.save();
+
+    const maskedMobile = `******${(challenge.mobileNumber || user.mobileNumber || '0000').slice(-4)}`;
+
+    return res.status(200).json({
+      success: true,
+      demoMode: true,
+      demoOtp: DEMO_PATIENT_OTP,
+      message: 'DEMO MODE: For this presentation demo, use OTP 123456.',
+      challengeToken: challenge.challengeToken,
+      maskedDestination: maskedMobile,
+      expiresInSeconds: 300,
+      cooldownSeconds: 45,
+    });
+  } catch (error) {
+    console.error('Resend Patient OTP Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error resending verification code.',
+    });
+  }
+};
+
+/**
+ * @desc    Direct Patient Identification (Legacy / Direct Endpoint)
  * @route   POST /api/auth/patient/login
  * @access  Public
  */
 const loginPatient = async (req, res) => {
   try {
-    const { mobileNumber, abhaId } = req.body;
+    const { name, age, gender, mobileNumber, abhaId, currentHealthProblem } = req.body;
 
     if (!mobileNumber && !abhaId) {
       return res.status(400).json({
@@ -826,21 +1210,24 @@ const loginPatient = async (req, res) => {
 
     let user = await User.findOne(query);
 
-    // If patient not found, create a pre-consultation intake user record
     if (!user) {
-      const defaultName = mobileNumber
-        ? `Patient (${mobileNumber.trim().slice(-4)})`
-        : `Patient (${abhaId.trim()})`;
-      const defaultPassword = `Patient@${Date.now()}`;
-
       user = await User.create({
-        name: defaultName,
+        name: name ? name.trim() : (mobileNumber ? `Patient (${mobileNumber.trim().slice(-4)})` : `Patient (${abhaId.trim()})`),
+        age: age ? parseInt(age, 10) : undefined,
+        gender: gender || undefined,
         role: 'patient',
         mobileNumber: mobileNumber ? mobileNumber.trim() : undefined,
         abhaId: abhaId ? abhaId.trim() : undefined,
-        password: defaultPassword,
+        currentHealthProblem: currentHealthProblem ? currentHealthProblem.trim() : '',
+        healthStatus: 'Stable',
         isActive: true,
       });
+    } else if (name || age || gender || currentHealthProblem) {
+      if (name) user.name = name.trim();
+      if (age) user.age = parseInt(age, 10);
+      if (gender) user.gender = gender;
+      if (currentHealthProblem) user.currentHealthProblem = currentHealthProblem.trim();
+      await user.save();
     }
 
     if (!user.isActive) {
@@ -859,10 +1246,14 @@ const loginPatient = async (req, res) => {
       user: {
         _id: user._id,
         name: user.name,
+        age: user.age,
+        gender: user.gender,
         email: user.email,
         role: user.role,
         mobileNumber: user.mobileNumber,
         abhaId: user.abhaId,
+        currentHealthProblem: user.currentHealthProblem || '',
+        healthStatus: user.healthStatus || 'Stable',
         isActive: user.isActive,
         createdAt: user.createdAt,
       },
@@ -903,6 +1294,10 @@ module.exports = {
   sendDoctorOtp,
   verifyDoctorOtp,
   resendDoctorOtp,
+  loginPatientChallenge,
+  verifyPatientOtp,
+  resendPatientOtp,
   loginPatient,
   getMe,
+  inMemoryPatients,
 };

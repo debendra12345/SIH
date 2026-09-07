@@ -1611,7 +1611,7 @@ button:active { transform: translateY(1px); }
         <div>✓ Consent-based patient access</div>
       </div>
     </div>
-    <div class="login-form">
+    <div class="login-form" style="position:relative;">
       <div class="portal-kicker">Clinical Intake Platform</div>
       <h2>Welcome to MediKiosk</h2>
       <p class="login-subtitle">Choose how you want to access the system.</p>
@@ -1663,20 +1663,51 @@ button:active { transform: translateY(1px); }
       <!-- PATIENT -->
       <div class="auth-panel" id="patientAuthPanel" role="tabpanel">
         <h3 style="font-size:17px;">Patient access</h3>
-        <p class="login-subtitle">Identify your hospital record before starting your pre-consultation intake.</p>
-        <div class="method-row">
-          <button class="method-btn active" id="mobileMethod" onclick="setPatientMethod('mobile')">📱 Mobile number</button>
-          <button class="method-btn" id="abhaMethod" onclick="setPatientMethod('abha')">🆔 ABHA ID</button>
+        <p class="login-subtitle">Enter your details to start your pre-consultation intake session.</p>
+        <div id="patientFormFields">
+          <div class="input-group">
+            <label for="patientName">Patient Name</label>
+            <input type="text" id="patientName" placeholder="e.g. Rahul Sharma" autocomplete="name" required>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="input-group">
+              <label for="patientAge">Age (Years)</label>
+              <input type="number" id="patientAge" min="1" max="120" placeholder="e.g. 25" inputmode="numeric" required>
+            </div>
+            <div class="input-group">
+              <label for="patientGender">Gender</label>
+              <select id="patientGender" style="width:100%;height:42px;border:1px solid var(--border-dark);border-radius:8px;padding:0 12px;font-size:14px;background:var(--white);color:inherit;" required>
+                <option value="" disabled selected>Select gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="input-group">
+            <label for="patientMobile">Mobile Number</label>
+            <input type="tel" id="patientMobile" inputmode="numeric" maxlength="10" placeholder="10-digit mobile number (e.g. 9876543210)" autocomplete="tel" required>
+          </div>
+          <div class="input-group">
+            <label for="patientHealthProblem">Current Health Problem</label>
+            <input type="text" id="patientHealthProblem" placeholder="e.g. I have fever and headache since yesterday." required>
+          </div>
+          <button class="primary-btn" id="patientContinueBtn" onclick="sendPatientOTP()">Continue</button>
         </div>
-        <div class="input-group"><label id="patientIdLabel" for="patientId">Registered Mobile Number</label><input type="text" id="patientId" inputmode="numeric" placeholder="Enter 10-digit mobile number"></div>
-        <button class="primary-btn" id="patientContinueBtn" onclick="sendPatientOTP()">Continue</button>
         <div id="patientOtpStep" style="display:none">
-          <div class="input-group"><label for="patientOtp">One-Time Code</label><input type="text" id="patientOtp" maxlength="6" inputmode="numeric" class="otp-input" placeholder="••••••"></div>
-          <button class="primary-btn" onclick="verifyPatientOTP()">Verify &amp; Continue</button>
-          <p class="demo-otp"><span class="demo-badge">Demo OTP · 123456</span></p>
-          <button class="secondary-btn" onclick="backToPatientLogin()">Change details</button>
+          <div style="display:inline-block;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;background:var(--teal-light);color:var(--teal);margin-bottom:8px;">DEMO MODE · PRESENTATION PROTOTYPE</div>
+          <div class="input-group">
+            <label for="patientOtp">One-Time Verification Code</label>
+            <input type="text" id="patientOtp" maxlength="6" inputmode="numeric" class="otp-input" placeholder="123456" autocomplete="one-time-code">
+          </div>
+          <p class="login-subtitle" id="patientOtpSentNotice" style="margin-bottom:12px; font-size:12px; color:var(--teal); font-weight:600;">For this presentation demo, use OTP: 123456</p>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+            <button class="primary-btn" id="patientVerifyOtpBtn" onclick="verifyPatientOTP()" style="margin-top:0;">Verify OTP</button>
+            <button type="button" class="secondary-btn" id="patientResendOtpBtn" onclick="resendPatientOTP()" style="margin-top:0;">Resend code</button>
+          </div>
+          <button class="secondary-btn" style="width:100%;" onclick="backToPatientLogin()">Change details</button>
         </div>
-        <div class="security-note" style="margin-top:14px;">🔒 Patient access uses consent-based session data. This prototype does not perform live ABDM verification.</div>
+        <div class="security-note" style="margin-top:14px;">🔒 Secure patient authentication (Presentation Demo Mode: 123456).</div>
       </div>
     </div>
   </div>
@@ -1706,8 +1737,17 @@ button:active { transform: translateY(1px); }
    <section class="welcome-card">
       <div>
         <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#a9ddd7;font-weight:800;margin-bottom:7px;">Your consultation preparation</div>
-        <h1 id="patientWelcomeTitle">Let's prepare your consultation.</h1>
-        <p id="patientWelcomeSubtitle">Complete your clinical intake and add previous records. Your doctor will review the organized information before seeing you.</p>
+        <h1 id="patientWelcomeTitle">Welcome, Rahul Sharma</h1>
+        <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+          <div style="background:rgba(255,255,255,0.18);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:6px;">
+            <span>Health Status:</span>
+            <span id="patientHealthStatusBadge" style="color:#ffffff;">🟢 Stable</span>
+          </div>
+        </div>
+        <div style="margin-top:10px;font-size:13px;background:rgba(255,255,255,0.12);padding:10px 14px;border-radius:8px;max-width:650px;">
+          <span style="font-size:10.5px;text-transform:uppercase;letter-spacing:0.5px;color:#a9ddd7;font-weight:800;display:block;margin-bottom:3px;">Current Health Problem:</span>
+          <span id="patientCurrentProblemDisplay" style="color:#ffffff;font-weight:600;">I have fever and headache since yesterday.</span>
+        </div>
       </div>
       <div class="token-box token-card-interactive" id="patientTokenBox" onclick="openPatientTokenModal()" title="Click to view digital token pass & room directions">
         <small>OPD TOKEN</small>
@@ -1806,8 +1846,8 @@ button:active { transform: translateY(1px); }
             <div class="meta-box-value" id="patientMetaConsent" style="color:var(--green);display:flex;align-items:center;gap:4px;">✓ Confirmed</div>
           </div>
           <div class="meta-box" id="metaBoxStatus">
-            <div class="meta-box-label">Status</div>
-            <div class="meta-box-value" id="patientMetaStatus" style="font-weight:700;">In preparation</div>
+            <div class="meta-box-label">Health Status</div>
+            <div class="meta-box-value" id="patientMetaStatus" style="font-weight:700;color:var(--green-mid, #059669);">🟢 Stable</div>
           </div>
         </div>
         <div class="patient-privacy">🔒 Your session is temporary. Only information you choose to provide is shared with the clinical team for consultation preparation. You may withdraw consent at any time.</div>
@@ -2813,14 +2853,14 @@ function getApiBase() {
 
   const host = window.location && (window.location.hostname || 'localhost');
   if (host === 'localhost' || host === '127.0.0.1' || host === '::1') {
-   return 'http://localhost:5000/api';
+   return 'http://localhost:5001/api';
   }
 
   if (window.location && window.location.origin && window.location.origin !== 'null') {
    return `${window.location.origin}/api`;
   }
 
-  return 'http://localhost:5000/api';
+  return 'http://localhost:5001/api';
 }
 
 const API_BASE = getApiBase();
@@ -4389,6 +4429,10 @@ let selectedOtpMethod = 'email';
 let resendTimerInterval = null;
 let resendCooldownSeconds = 0;
 
+let patientChallengeToken = null;
+let patientResendTimerInterval = null;
+let patientResendCooldownSeconds = 0;
+
 function applyDoctorProfile(user) {
   if (!user) return;
   const name = user.name || 'Doctor';
@@ -4421,11 +4465,33 @@ function applyDoctorProfile(user) {
 
 function applyPatientProfile(user) {
   if (!user) return;
+  if (user.name) patientSession.name = user.name;
+  if (user.mobileNumber || user.phone) patientSession.phone = user.mobileNumber || user.phone;
+  if (user.age) patientSession.age = user.age;
+  if (user.gender) patientSession.gender = user.gender;
+  if (user.currentHealthProblem) {
+    patientSession.currentHealthProblem = user.currentHealthProblem;
+    if (patientSession.healthHistory) {
+      patientSession.healthHistory.chiefComplaint = user.currentHealthProblem;
+    }
+  }
+  patientSession.healthStatus = user.healthStatus || patientSession.healthStatus || 'Stable';
+
   const pName = document.getElementById('patientDisplayName');
-  if (pName) pName.textContent = user.name || 'Patient';
+  if (pName) pName.textContent = user.name || patientSession.name;
+
+  const subLabel = document.getElementById('patientSubLabel');
+  if (subLabel) {
+    const agePart = patientSession.age ? `${patientSession.age} yrs` : '';
+    const genderPart = patientSession.gender || '';
+    const phonePart = patientSession.phone ? `+91 ${patientSession.phone}` : '';
+    const metaStr = [agePart, genderPart, phonePart].filter(Boolean).join(' · ');
+    subLabel.textContent = metaStr || 'Pre-consultation session';
+  }
+
   const pAvatar = document.getElementById('patientAvatar');
   if (pAvatar) {
-    const initials = (user.name || 'PS')
+    const initials = (user.name || patientSession.name || 'PS')
       .split(' ')
       .filter(Boolean)
       .map(n => n[0])
@@ -4433,6 +4499,26 @@ function applyPatientProfile(user) {
       .slice(0, 2)
       .toUpperCase() || 'PS';
     pAvatar.textContent = initials;
+  }
+  const welcomeTitle = document.getElementById('patientWelcomeTitle');
+  if (welcomeTitle) {
+    welcomeTitle.textContent = `Welcome, ${user.name || patientSession.name}`;
+  }
+
+  const healthStatusBadge = document.getElementById('patientHealthStatusBadge');
+  if (healthStatusBadge) {
+    healthStatusBadge.textContent = `🟢 ${patientSession.healthStatus || 'Stable'}`;
+  }
+
+  const problemDisplay = document.getElementById('patientCurrentProblemDisplay');
+  if (problemDisplay) {
+    problemDisplay.textContent = patientSession.currentHealthProblem || patientSession.healthHistory?.chiefComplaint || 'Fever and headache since yesterday.';
+  }
+
+  const statusEl = document.getElementById('patientMetaStatus');
+  if (statusEl) {
+    statusEl.textContent = `🟢 ${patientSession.healthStatus || 'Stable'}`;
+    statusEl.style.color = 'var(--green-mid, #059669)';
   }
 }
 
@@ -4445,11 +4531,13 @@ function applyPatientProfile(user) {
 let patientSession = {
   id: 'P-1024',
   token: 'A-104',
-  name: 'Aarav Sharma',
-  phone: '7665778969',
+  name: 'Rahul Sharma',
+  phone: '9876543210',
   abhaId: '91-4829-1024-5501',
-  age: 46,
+  age: 25,
   gender: 'Male',
+  currentHealthProblem: 'Fever and headache since yesterday.',
+  healthStatus: 'Stable',
   blood: 'O+',
   dept: 'General Medicine',
   room: 'Room 4',
@@ -4458,15 +4546,15 @@ let patientSession = {
   consentConfirmed: true,
   status: 'In preparation',
   healthHistory: {
-    chiefComplaint: 'Chest discomfort for 2 days',
+    chiefComplaint: 'Fever and headache since yesterday.',
     duration: '2 Days',
     severity: 'Moderate',
     severityNum: 5,
-    symptoms: ['Chest Discomfort / Tightness'],
-    conditions: ['Hypertension (High BP)'],
-    medications: 'Amlodipine 5 mg once daily',
+    symptoms: ['High Fever', 'Headache / Migraine'],
+    conditions: ['No Known Conditions'],
+    medications: 'None reported',
     allergies: 'No known allergies',
-    notes: 'Patient-reported chest discomfort for two days; physician review required.',
+    notes: 'Patient-reported: Fever and headache since yesterday; physician review required.',
     completed: true
   },
   ayushHistory: {
@@ -4496,112 +4584,307 @@ function switchRole(role) {
 }
 
 function setPatientMethod(method) {
-  const isMobile = method === 'mobile';
-  document.getElementById('mobileMethod').classList.toggle('active', isMobile);
-  document.getElementById('abhaMethod').classList.toggle('active', !isMobile);
-  document.getElementById('patientIdLabel').textContent = isMobile ? 'Registered Mobile Number' : 'ABHA ID';
-  const inp = document.getElementById('patientId');
-  inp.placeholder = isMobile ? 'Enter 10-digit mobile number' : 'Enter ABHA number (e.g. 91-4829-1042-5501)';
-  inp.inputMode = isMobile ? 'numeric' : 'text';
-  inp.value = '';
+  // Mobile-first method is default
 }
 
 async function sendPatientOTP() {
-  const v = document.getElementById('patientId').value.trim();
-  const isMobile = document.getElementById('mobileMethod').classList.contains('active');
-  if (!v) { 
-    showToast(isMobile ? 'Please enter your registered mobile number.' : 'Please enter your ABHA ID.', 'warn'); 
-    return; 
-  }
-  if (isMobile && !/^\d{10}$/.test(v)) { 
-    showToast('Please enter a valid 10-digit mobile number (e.g. 7665778969).', 'warn'); 
-    return; 
-  }
-  document.getElementById('patientOtpStep').style.display = 'block';
-  document.getElementById('patientContinueBtn').style.display = 'none';
-  document.querySelector('#patientAuthPanel .method-row').style.display = 'none';
-  document.querySelector('#patientAuthPanel > .input-group').style.display = 'none';
-}
+  const name = (document.getElementById('patientName')?.value || '').trim();
+  const age = Number(document.getElementById('patientAge')?.value);
+  const gender = (document.getElementById('patientGender')?.value || '').trim();
+  const mobile = (document.getElementById('patientMobile')?.value || '').trim();
+  const healthProblem = (document.getElementById('patientHealthProblem')?.value || '').trim();
 
-async function verifyPatientOTP() {
-  const otpVal = document.getElementById('patientOtp').value.trim();
-  if (!/^\d{6}$/.test(otpVal) || otpVal !== '123456') {
-    showToast('Invalid demo OTP. Enter the six-digit code shown for this prototype.', 'error'); 
-    return; 
+  if (!name) {
+    showToast('Please enter your full name.', 'warn');
+    return;
   }
-  
-  const enteredVal = document.getElementById('patientId').value.trim();
-  if (enteredVal) {
-    if (/^\d{10}$/.test(enteredVal)) {
-      patientSession.phone = enteredVal;
-    } else {
-      patientSession.abhaId = enteredVal;
-    }
+  if (!age || age < 1 || age > 120) {
+    showToast('Please enter a valid age between 1 and 120.', 'warn');
+    return;
+  }
+  if (!gender) {
+    showToast('Please select your gender.', 'warn');
+    return;
+  }
+  const cleanMobile = mobile.replace(/\D/g, '');
+  if (cleanMobile.length !== 10) {
+    showToast('Please enter a valid 10-digit mobile number.', 'warn');
+    return;
+  }
+  if (!healthProblem) {
+    showToast('Please enter your current health problem.', 'warn');
+    return;
   }
 
-  // Register or look up patient in backend SQLite DB
+  const btn = document.getElementById('patientContinueBtn');
+  const originalText = btn ? btn.textContent : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Initiating mobile OTP...';
+  }
+
   try {
-    const regRes = await fetch(`${API_BASE}/patients/register`, {
+    const res = await fetch(`${API_BASE_URL}/auth/patient/login-challenge`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        patientId: patientSession.id,
-        name: patientSession.name,
-        phone: patientSession.phone,
-        age: patientSession.age,
-        gender: patientSession.gender,
-        bloodGroup: patientSession.blood,
-        department: patientSession.dept,
-        room: patientSession.room
-      })
+        name,
+        age,
+        gender,
+        mobileNumber: cleanMobile,
+        currentHealthProblem: healthProblem,
+      }),
     });
 
-    if (regRes.ok) {
-      const json = await regRes.json();
-      if (json.session && json.session.opdToken) {
-        patientSession.token = json.session.opdToken;
-      }
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      showToast(data.message || 'Failed to initiate OTP challenge.', 'error');
+      return;
     }
+
+    patientChallengeToken = data.challengeToken;
+
+    document.getElementById('patientFormFields').style.display = 'none';
+    document.getElementById('patientOtpStep').style.display = 'block';
+
+    const noticeEl = document.getElementById('patientOtpSentNotice');
+    if (noticeEl) {
+      noticeEl.textContent = 'For this presentation demo, use OTP: 123456';
+    }
+
+    const otpInp = document.getElementById('patientOtp');
+    if (otpInp) {
+      otpInp.value = '';
+      otpInp.placeholder = '123456';
+      otpInp.focus();
+    }
+
+    startPatientResendCooldown(data.cooldownSeconds || 45);
+    showToast('Demo Mode: Use OTP 123456 to verify.', 'info');
   } catch (err) {
-    console.log('Registration sync note:', err);
+    console.error('Patient Send OTP Error:', err);
+    showToast('Unable to connect to authentication server. Check that server is running.', 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  }
+}
+
+async function verifyPatientOTP() {
+  const otpVal = (document.getElementById('patientOtp')?.value || '').trim();
+  if (!otpVal || otpVal.length !== 6) {
+    showToast('Please enter the 6-digit code (Demo OTP: 123456).', 'warn');
+    return;
   }
 
-  // Attempt to fetch any existing health history for patient from backend API
+  if (!patientChallengeToken) {
+    showToast('OTP challenge expired or missing. Please try again.', 'error');
+    backToPatientLogin();
+    return;
+  }
+
+  const btn = document.getElementById('patientVerifyOtpBtn');
+  const originalText = btn ? btn.textContent : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Verifying OTP...';
+  }
+
   try {
-    const hhRes = await fetch(`${API_BASE}/patients/${patientSession.id}/health-history`);
-    if (hhRes.ok) {
-      const json = await hhRes.json();
-      if (json && json.data) {
-        if (json.data.chiefComplaint) patientSession.healthHistory.chiefComplaint = json.data.chiefComplaint;
-        if (json.data.duration || json.data.symptomDuration) patientSession.healthHistory.duration = json.data.duration || json.data.symptomDuration;
-        if (json.data.severity) patientSession.healthHistory.severity = json.data.severity;
-        if (json.data.currentMedications && json.data.currentMedications.length) {
-          patientSession.healthHistory.medications = Array.isArray(json.data.currentMedications) ? json.data.currentMedications.join(', ') : json.data.currentMedications;
-        }
-        if (json.data.allergies && json.data.allergies.length) {
-          patientSession.healthHistory.allergies = Array.isArray(json.data.allergies) ? json.data.allergies.join(', ') : json.data.allergies;
-        }
-        patientSession.healthHistory.completed = true;
+    const res = await fetch(`${API_BASE_URL}/auth/patient/verify-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        challengeToken: patientChallengeToken,
+        otp: otpVal,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      showToast(data.message || 'Invalid or expired OTP. Use demo OTP 123456.', 'error');
+      if (data.locked || data.isExpired) {
+        setTimeout(() => {
+          backToPatientLogin();
+        }, 1800);
       }
+      return;
     }
+
+    if (patientResendTimerInterval) {
+      clearInterval(patientResendTimerInterval);
+      patientResendTimerInterval = null;
+    }
+
+    // Save token & user session
+    localStorage.setItem('medikiosk_token', data.token);
+    localStorage.setItem('medikiosk_user', JSON.stringify(data.user));
+    state.currentUser = data.user;
+
+    applyPatientProfile(data.user);
+
+    // Register or sync patient in backend SQLite DB
+    try {
+      const regRes = await fetch(`${API_BASE}/patients/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patientId: patientSession.id,
+          name: patientSession.name,
+          phone: patientSession.phone,
+          age: patientSession.age,
+          gender: patientSession.gender,
+          bloodGroup: patientSession.blood,
+          department: patientSession.dept,
+          room: patientSession.room
+        })
+      });
+
+      if (regRes.ok) {
+        const json = await regRes.json();
+        if (json.session && json.session.opdToken) {
+          patientSession.token = json.session.opdToken;
+        }
+      }
+    } catch (err) {
+      console.log('Registration sync note:', err);
+    }
+
+    // Attempt to fetch any existing health history for patient from backend API
+    try {
+      const hhRes = await fetch(`${API_BASE}/patients/${patientSession.id}/health-history`);
+      if (hhRes.ok) {
+        const json = await hhRes.json();
+        if (json && json.data) {
+          if (json.data.chiefComplaint) patientSession.healthHistory.chiefComplaint = json.data.chiefComplaint;
+          if (json.data.duration || json.data.symptomDuration) patientSession.healthHistory.duration = json.data.duration || json.data.symptomDuration;
+          if (json.data.severity) patientSession.healthHistory.severity = json.data.severity;
+          if (json.data.currentMedications && json.data.currentMedications.length) {
+            patientSession.healthHistory.medications = Array.isArray(json.data.currentMedications) ? json.data.currentMedications.join(', ') : json.data.currentMedications;
+          }
+          if (json.data.allergies && json.data.allergies.length) {
+            patientSession.healthHistory.allergies = Array.isArray(json.data.allergies) ? json.data.allergies.join(', ') : json.data.allergies;
+          }
+          patientSession.healthHistory.completed = true;
+        }
+      }
+    } catch (err) {
+      console.log('Health history fetch note:', err);
+    }
+
+    patientChallengeToken = null;
+
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('patientApp').style.display = 'block';
+    renderPatientDashboard();
+    showToast(`Welcome ${patientSession.name}! Consultation preparation session active.`, 'success');
   } catch (err) {
-    console.log('Health history fetch note:', err);
+    console.error('Patient Verify OTP Error:', err);
+    showToast('Unable to connect to authentication server.', 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  }
+}
+
+async function resendPatientOTP() {
+  if (!patientChallengeToken) {
+    showToast('Session expired. Please enter your details again.', 'error');
+    backToPatientLogin();
+    return;
   }
 
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('patientApp').style.display = 'block';
-  renderPatientDashboard();
-  showToast(`Welcome ${patientSession.name}! Consultation preparation session active.`, 'success');
-  pendingPatientAuth = null;
+  if (patientResendCooldownSeconds > 0) {
+    showToast(`Please wait ${patientResendCooldownSeconds}s before resending.`, 'warn');
+    return;
+  }
+
+  const btn = document.getElementById('patientResendOtpBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Resending...';
+  }
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/patient/resend-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ challengeToken: patientChallengeToken }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      showToast(data.message || 'Failed to resend code.', 'error');
+      return;
+    }
+
+    startPatientResendCooldown(data.cooldownSeconds || 45);
+
+    const noticeEl = document.getElementById('patientOtpSentNotice');
+    if (noticeEl) {
+      noticeEl.textContent = 'For this presentation demo, use OTP: 123456';
+    }
+
+    const otpInput = document.getElementById('patientOtp');
+    if (otpInput) {
+      otpInput.value = '';
+      otpInput.placeholder = '123456';
+      otpInput.focus();
+    }
+
+    showToast('Demo Mode: Use OTP 123456.', 'info');
+  } catch (err) {
+    console.error('Patient Resend OTP Error:', err);
+    showToast('Error communicating with backend.', 'error');
+  }
+}
+
+function startPatientResendCooldown(seconds = 45) {
+  if (patientResendTimerInterval) {
+    clearInterval(patientResendTimerInterval);
+    patientResendTimerInterval = null;
+  }
+
+  patientResendCooldownSeconds = seconds;
+  const btn = document.getElementById('patientResendOtpBtn');
+  if (!btn) return;
+
+  const updateBtn = () => {
+    if (patientResendCooldownSeconds <= 0) {
+      btn.disabled = false;
+      btn.textContent = 'Resend code';
+      if (patientResendTimerInterval) {
+        clearInterval(patientResendTimerInterval);
+        patientResendTimerInterval = null;
+      }
+    } else {
+      btn.disabled = true;
+      btn.textContent = `Resend (${patientResendCooldownSeconds}s)`;
+      patientResendCooldownSeconds--;
+    }
+  };
+
+  updateBtn();
+  patientResendTimerInterval = setInterval(updateBtn, 1000);
 }
 
 function backToPatientLogin() {
+  if (patientResendTimerInterval) {
+    clearInterval(patientResendTimerInterval);
+    patientResendTimerInterval = null;
+  }
   document.getElementById('patientOtpStep').style.display = 'none';
-  document.getElementById('patientContinueBtn').style.display = 'block';
-  document.querySelector('#patientAuthPanel .method-row').style.display = 'grid';
-  document.querySelector('#patientAuthPanel > .input-group').style.display = 'block';
-  document.getElementById('patientOtp').value = '';
-  pendingPatientAuth = null;
+  document.getElementById('patientFormFields').style.display = 'block';
+  const otpInput = document.getElementById('patientOtp');
+  if (otpInput) otpInput.value = '';
+  patientChallengeToken = null;
 }
 
 function scrollToPatientSection(id, button) {
@@ -4619,6 +4902,18 @@ function renderPatientDashboard() {
   if (avatarEl) {
     const initials = patientSession.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
     avatarEl.textContent = initials || 'PS';
+  }
+  const welcomeTitle = document.getElementById('patientWelcomeTitle');
+  if (welcomeTitle) {
+    welcomeTitle.textContent = `Welcome, ${patientSession.name}`;
+  }
+  const healthStatusBadge = document.getElementById('patientHealthStatusBadge');
+  if (healthStatusBadge) {
+    healthStatusBadge.textContent = `🟢 ${patientSession.healthStatus || 'Stable'}`;
+  }
+  const problemDisplay = document.getElementById('patientCurrentProblemDisplay');
+  if (problemDisplay) {
+    problemDisplay.textContent = patientSession.currentHealthProblem || patientSession.healthHistory?.chiefComplaint || 'Fever and headache since yesterday.';
   }
   const tokenEl = document.getElementById('patientTokenNum');
   if (tokenEl) tokenEl.textContent = patientSession.token;
@@ -4655,8 +4950,8 @@ function renderPatientDashboard() {
   }
   const statusEl = document.getElementById('patientMetaStatus');
   if (statusEl) {
-    statusEl.textContent = patientSession.status;
-    statusEl.style.color = patientSession.status === 'Ready for Doctor' ? 'var(--teal)' : 'var(--navy)';
+    statusEl.innerHTML = `🟢 ${patientSession.healthStatus || 'Stable'}`;
+    statusEl.style.color = 'var(--green-mid, #059669)';
   }
 
   // Compute checklist completion
@@ -4816,7 +5111,7 @@ function openPatientHealthHistoryModal() {
 
     <div>
       <label class="modal-field-label" for="ph_complaint">Chief Concern / Main Problem *</label>
-      <textarea id="ph_complaint" class="modal-textarea" placeholder="Describe what brings you to the hospital today in your own words...">${hh.chiefComplaint || ''}</textarea>
+      <textarea id="ph_complaint" class="modal-textarea" placeholder="Describe what brings you to the hospital today in your own words...">${hh.chiefComplaint || patientSession.currentHealthProblem || ''}</textarea>
     </div>
 
     <div class="form-grid-2">
@@ -6034,13 +6329,20 @@ function logout() {
     clearInterval(resendTimerInterval);
     resendTimerInterval = null;
   }
+  if (patientResendTimerInterval) {
+    clearInterval(patientResendTimerInterval);
+    patientResendTimerInterval = null;
+  }
   localStorage.removeItem('medikiosk_token');
   localStorage.removeItem('medikiosk_user');
   state.currentUser = null;
   doctorChallengeToken = null;
+  patientChallengeToken = null;
   pendingDoctorAuth = null;
+  pendingPatientAuth = null;
 
   document.getElementById('app').style.display = 'none';
+  document.getElementById('patientApp').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('doctorLoginStep').style.display = 'block';
   document.getElementById('doctorMethodStep').style.display = 'none';
@@ -6049,10 +6351,17 @@ function logout() {
   document.getElementById('password').value = '';
   const otpInput = document.getElementById('otp');
   if (otpInput) otpInput.value = '';
+  const pOtpInput = document.getElementById('patientOtp');
+  if (pOtpInput) pOtpInput.value = '';
+  backToPatientLogin();
   switchRole('doctor');
   closeProfileMenu();
   closeNotifPanel();
   showToast('Logged out successfully.', 'info');
+}
+
+function logoutPatient() {
+  logout();
 }
 
 /* ============================================================
@@ -6089,6 +6398,7 @@ async function checkExistingSession() {
       } else if (data.user.role === 'patient') {
         document.getElementById('patientApp').style.display = 'block';
         applyPatientProfile(data.user);
+        renderPatientDashboard();
       }
     }
   } catch (err) {
@@ -6103,13 +6413,8 @@ function initApp() {
   navigate('dashboard');
 }
 
-// Development / Demo Mode: Always start explicitly at the Login Screen on page load/reload
-document.getElementById('loginScreen').style.display = 'flex';
-document.getElementById('app').style.display = 'none';
-document.getElementById('patientApp').style.display = 'none';
-document.getElementById('doctorLoginStep').style.display = 'block';
-document.getElementById('doctorMethodStep').style.display = 'none';
-document.getElementById('doctorOtpStep').style.display = 'none';
+// Check for existing session token
+checkExistingSession();
 
 /* Desktop sidebar resize: keeps the clinical workspace comfortable on wide displays. */
 (function setupSidebarResize() {
@@ -6279,7 +6584,7 @@ function openPatientHealthHistoryModal() {
   document.getElementById('appModalBody').innerHTML = `
     <div class="intake-conversation">
       <div style="font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--teal);font-weight:800;">Clinical intake · one question at a time</div>
-      <div id="intakeQuestion" class="intake-question">${hh.chiefComplaint ? languageText.followUp : languageText.firstQuestion}</div>
+      <div id="intakeQuestion" class="intake-question">${(hh.chiefComplaint || patientSession.currentHealthProblem) ? `Your main concern: "${hh.chiefComplaint || patientSession.currentHealthProblem}". Would you like to share any additional details or symptoms?` : languageText.firstQuestion}</div>
       <div class="intake-progress"><i id="intakeProgressFill" style="width:${Math.min(96,intakeQuestionIndex*18)}%"></i></div>
       <div id="intakeProgressLabel" style="font-size:10px;color:var(--muted);margin:6px 0 12px;">${Math.min(96,intakeQuestionIndex*18)}% complete · conversational intake</div>
       <div id="intakeTranscript" style="display:grid;gap:7px;max-height:170px;overflow:auto;"></div>
